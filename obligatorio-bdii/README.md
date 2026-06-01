@@ -7,7 +7,7 @@
 - **Backend:** Python + FastAPI
 - **Frontend:** React + Vite
 
-## Setup
+## Setup (como correr)
 
 ### Base de datos
 ```bash
