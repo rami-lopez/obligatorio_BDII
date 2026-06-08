@@ -12,13 +12,12 @@ services:
     ports:
       - "3307:3306"
     volumes:
-      - ticketing_db_data:/var/lib/mysql
-      - ./sql/01_schema.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./sql/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./sql/02_inserts.sql:/docker-entrypoint-initdb.d/02_inserts.sql:ro
+    tmpfs:
+      - /var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uticketing_user", "-pticketing_pass"]
       interval: 10s
       timeout: 5s
       retries: 10
-
-volumes:
-  ticketing_db_data:

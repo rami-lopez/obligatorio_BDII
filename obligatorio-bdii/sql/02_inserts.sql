@@ -1,33 +1,41 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
+-- Credenciales de seed compatibles con app.auth.hashing:
+-- admin*: Admin2026!
+-- func*: Func2026!
+-- usuario*: User2026!
+SET @pwd_admin = '$2b$12$dd83eM57wMK/fJaDGz.iiu3CrU36lxbdZe1aWpC3.hNvOXs4x7gEG';
+SET @pwd_func = '$2b$12$ZXo0b8OgY1cQ1/g27.GOmubLUKbaOIhn6J2eVEUYIsza6TN9tJlyS';
+SET @pwd_user = '$2b$12$M/KxU7YHtQuojF2yXfx7iOPLyjngYbhfPXSFj7miYJfpgVah0kBRe';
+
 -- ============================================================
 -- SEDE
 -- ============================================================
 INSERT INTO sede (nombre, pais) VALUES
-('Sede Montevideo',      'Uruguay'),
-('Sede Buenos Aires',    'Argentina'),
-('Sede Santiago',        'Chile'),
-('Sede São Paulo',       'Brasil'),
-('Sede Bogotá',          'Colombia');
+('Sede Ciudad de Mexico',       'Mexico'),
+('Sede Guadalajara',             'Mexico'),
+('Sede Monterrey',               'Mexico'),
+('Sede Nueva York / Nueva Jersey','Estados Unidos'),
+('Sede Vancouver',               'Canada');
 
 -- ============================================================
 -- USUARIO
 -- ============================================================
-INSERT INTO usuario (mail, pais_doc, tipo_doc, nro_doc, pais_dir, localidad, calle, nro_dir, cod_postal) VALUES
-('admin1@example.com',    'Uruguay',   'CI',       '12345678',  'Uruguay',   'Montevideo',    'Av. 18 de Julio',  '1234', '11000'),
-('admin2@example.com',    'Argentina', 'DNI',      '30123456',  'Argentina', 'Buenos Aires',  'Corrientes',       '800',  'C1043'),
-('admin3@example.com',    'Chile',     'RUT',      '12345678-9','Chile',     'Santiago',      'Providencia',      '500',  '7500000'),
-('func1@example.com',     'Uruguay',   'CI',       '23456789',  'Uruguay',   'Montevideo',    'Bulevar Artigas',  '2000', '11300'),
-('func2@example.com',     'Uruguay',   'CI',       '34567890',  'Uruguay',   'Canelones',     'Av. Italia',       '450',  '90000'),
-('func3@example.com',     'Argentina', 'DNI',      '40123456',  'Argentina', 'Rosario',       'Córdoba',          '1200', 'S2000'),
-('func4@example.com',     'Uruguay',   'CI',       '45678901',  'Uruguay',   'Montevideo',    'Colonia',          '900',  '11100'),
-('usuario1@example.com',  'Uruguay',   'CI',       '56789012',  'Uruguay',   'Montevideo',    'Rivera',           '3100', '11600'),
-('usuario2@example.com',  'Argentina', 'DNI',      '50123456',  'Argentina', 'Mendoza',       'San Martín',       '200',  'M5500'),
-('usuario3@example.com',  'Brasil',    'CPF',      '123.456.789-00', 'Brasil','São Paulo',    'Paulista',         '1000', '01310-100'),
-('usuario4@example.com',  'Uruguay',   'CI',       '67890123',  'Uruguay',   'Paysandú',      'Leandro Gómez',    '500',  '60000'),
-('usuario5@example.com',  'Chile',     'RUT',      '98765432-1','Chile',     'Valparaíso',    'Pedro Montt',      '300',  '2360000'),
-('usuario6@example.com',  'Uruguay',   'CI',       '78901234',  'Uruguay',   'Montevideo',    'Jackson',          '1400', '11400'),
-('usuario7@example.com',  'Colombia',  'CC',       '1023456789','Colombia',  'Bogotá',        'Carrera 7',        '32',   '110111');
+INSERT INTO usuario (mail, pais_doc, tipo_doc, nro_doc, pais_dir, localidad, calle, nro_dir, cod_postal, password_hash) VALUES
+('admin1@example.com',    'Uruguay',   'CI',       '12345678',  'Uruguay',   'Montevideo',    'Av. 18 de Julio',  '1234', '11000',    @pwd_admin),
+('admin2@example.com',    'Argentina', 'DNI',      '30123456',  'Argentina', 'Buenos Aires',  'Corrientes',       '800',  'C1043',    @pwd_admin),
+('admin3@example.com',    'Chile',     'RUT',      '12345678-9','Chile',     'Santiago',      'Providencia',      '500',  '7500000',  @pwd_admin),
+('func1@example.com',     'Uruguay',   'CI',       '23456789',  'Uruguay',   'Montevideo',    'Bulevar Artigas',  '2000', '11300',    @pwd_func),
+('func2@example.com',     'Uruguay',   'CI',       '34567890',  'Uruguay',   'Canelones',     'Av. Italia',       '450',  '90000',    @pwd_func),
+('func3@example.com',     'Argentina', 'DNI',      '40123456',  'Argentina', 'Rosario',       'Córdoba',          '1200', 'S2000',    @pwd_func),
+('func4@example.com',     'Uruguay',   'CI',       '45678901',  'Uruguay',   'Montevideo',    'Colonia',          '900',  '11100',    @pwd_func),
+('usuario1@example.com',  'Uruguay',   'CI',       '56789012',  'Uruguay',   'Montevideo',    'Rivera',           '3100', '11600',    @pwd_user),
+('usuario2@example.com',  'Argentina', 'DNI',      '50123456',  'Argentina', 'Mendoza',       'San Martín',       '200',  'M5500',    @pwd_user),
+('usuario3@example.com',  'Brasil',    'CPF',      '123.456.789-00', 'Brasil','Sao Paulo',    'Paulista',         '1000', '01310-100', @pwd_user),
+('usuario4@example.com',  'Uruguay',   'CI',       '67890123',  'Uruguay',   'Paysandu',      'Leandro Gomez',    '500',  '60000',    @pwd_user),
+('usuario5@example.com',  'Chile',     'RUT',      '98765432-1','Chile',     'Valparaiso',    'Pedro Montt',      '300',  '2360000',  @pwd_user),
+('usuario6@example.com',  'Uruguay',   'CI',       '78901234',  'Uruguay',   'Montevideo',    'Jackson',          '1400', '11400',    @pwd_user),
+('usuario7@example.com',  'Colombia',  'CC',       '1023456789','Colombia',  'Bogota',        'Carrera 7',        '32',   '110111',   @pwd_user);
 
 -- ============================================================
 -- ADMINISTRADOR
@@ -77,31 +85,31 @@ INSERT INTO telefono (mail_usuario, numero) VALUES
 -- ESTADIO
 -- ============================================================
 INSERT INTO estadio (nombre, pais, ciudad, id_sede) VALUES
-('Estadio Centenario',        'Uruguay',   'Montevideo',    1),
-('Estadio Gran Parque Central', 'Uruguay',   'Montevideo',    1),
-('Estadio Campeon del Siglo', 'Uruguay', 'Buenos Aires',  2),
-('Estadio Nacional',          'Chile',     'Santiago',      3),
-('Arena Corinthians',         'Brasil',    'São Paulo',     4);
+('Estadio Azteca',            'Mexico',           'Ciudad de Mexico',     1),
+('Estadio Akron',             'Mexico',           'Zapopan',              2),
+('Estadio BBVA',              'Mexico',           'Monterrey',            3),
+('MetLife Stadium',           'Estados Unidos',    'East Rutherford',      4),
+('BC Place',                  'Canada',           'Vancouver',            5);
 
 -- ============================================================
 -- SECTOR
 -- ============================================================
 INSERT INTO sector (id_estadio, codigo, capacidad_max, costo) VALUES
--- Centenario
+-- Estadio Azteca
 (1, 'A1', 500,  150.00),
 (1, 'B1', 800,  100.00),
 (1, 'C1', 1200,  60.00),
--- Gran Parque Central
+-- Estadio Akron
 (2, 'A1', 400,  200.00),
 (2, 'B1', 600,  130.00),
 (2, 'C1', 1000,  80.00),
--- Campeon del Siglo
+-- Estadio BBVA
 (3, 'A1', 600,  180.00),
 (3, 'B1', 900,  120.00),
--- Nacional
+-- MetLife Stadium
 (4, 'A1', 450,  160.00),
 (4, 'B1', 700,   90.00),
--- Arena Corinthians
+-- BC Place
 (5, 'A1', 500,  220.00),
 (5, 'B1', 800,  140.00);
 
@@ -109,13 +117,13 @@ INSERT INTO sector (id_estadio, codigo, capacidad_max, costo) VALUES
 -- EVENTO
 -- ============================================================
 INSERT INTO evento (fecha_hora, equipo_local, equipo_visitante, id_estadio, mail_admin) VALUES
-('2025-03-15 20:00:00', 'España',         'Paises Bajos',          1, 'admin1@example.com'),
-('2025-03-22 18:00:00', 'Alemania',          'Portugal',         2, 'admin1@example.com'),
-('2025-04-05 21:00:00', 'Argentina',      'Uruguay',     3, 'admin2@example.com'),
-('2025-04-12 19:00:00', 'Corea del Sur',        'Mexico',      4, 'admin3@example.com'),
-('2025-04-20 16:00:00', 'Francia',      'Alemania',        5, 'admin3@example.com'),
-('2025-05-10 20:00:00', 'Noruega',         'Uruguay',         1, 'admin1@example.com'),
-('2025-05-18 17:00:00', 'Brasil',          'Colombia',            2, 'admin1@example.com');
+('2026-06-11 20:00:00', 'Mexico',         'Canada',                1, 'admin1@example.com'),
+('2026-06-12 18:00:00', 'Estados Unidos',  'Japon',                 2, 'admin1@example.com'),
+('2026-06-14 21:00:00', 'Argentina',      'Uruguay',               3, 'admin2@example.com'),
+('2026-06-16 19:00:00', 'Espana',         'Francia',               4, 'admin3@example.com'),
+('2026-06-18 16:00:00', 'Brasil',         'Portugal',              5, 'admin3@example.com'),
+('2026-06-22 20:00:00', 'Inglaterra',     'Alemania',              1, 'admin1@example.com'),
+('2026-06-24 17:00:00', 'Marruecos',      'Colombia',              2, 'admin1@example.com');
 
 -- ============================================================
 -- EVENTO_SECTOR
@@ -164,13 +172,13 @@ INSERT INTO dispositivo (mail_funcionario, identificador) VALUES
 -- VENTA
 -- ============================================================
 INSERT INTO venta (fecha, estado, monto_total, tasa_comision, mail_usuario) VALUES
-('2025-02-10 10:00:00', 'confirmada', 300.00, 0.0500, 'usuario1@example.com'),
-('2025-02-11 11:30:00', 'confirmada', 200.00, 0.0500, 'usuario2@example.com'),
-('2025-02-12 09:00:00', 'confirmada', 450.00, 0.0500, 'usuario1@example.com'),
-('2025-02-13 14:00:00', 'confirmada', 160.00, 0.0500, 'usuario3@example.com'),
-('2025-02-14 16:00:00', 'confirmada', 260.00, 0.0500, 'usuario4@example.com'),
-('2025-02-15 08:00:00', 'confirmada', 400.00, 0.0500, 'usuario5@example.com'),
-('2025-02-20 20:00:00', 'anulada',    100.00, 0.0500, 'usuario6@example.com');
+('2026-05-10 10:00:00', 'confirmada', 300.00, 0.0500, 'usuario1@example.com'),
+('2026-05-11 11:30:00', 'confirmada', 200.00, 0.0500, 'usuario2@example.com'),
+('2026-05-12 09:00:00', 'confirmada', 450.00, 0.0500, 'usuario1@example.com'),
+('2026-05-13 14:00:00', 'confirmada', 160.00, 0.0500, 'usuario3@example.com'),
+('2026-05-14 16:00:00', 'confirmada', 260.00, 0.0500, 'usuario4@example.com'),
+('2026-05-15 08:00:00', 'confirmada', 400.00, 0.0500, 'usuario5@example.com'),
+('2026-05-20 20:00:00', 'anulada',    100.00, 0.0500, 'usuario6@example.com');
 
 -- ============================================================
 -- ENTRADA
@@ -200,30 +208,30 @@ INSERT INTO entrada (estado, id_venta, id_evento, id_estadio, codigo_sector, mai
 -- TRANSFERENCIA
 -- ============================================================
 INSERT INTO transferencia (fecha_solicitud, fecha_aceptacion, estado, nro_orden, id_entrada, mail_origen, mail_destino) VALUES
-('2025-02-18 10:00:00', '2025-02-18 12:00:00', 'aceptada',  1, 7, 'usuario1@example.com', 'usuario3@example.com'),
-('2025-02-19 09:00:00', NULL,                  'pendiente', 1, 1, 'usuario1@example.com', 'usuario4@example.com'),
-('2025-02-20 15:00:00', '2025-02-20 16:00:00', 'rechazada', 1, 3, 'usuario2@example.com', 'usuario5@example.com'),
-('2025-02-21 11:00:00', '2025-02-21 13:00:00', 'aceptada',  1, 4, 'usuario2@example.com', 'usuario6@example.com'),
-('2025-02-22 08:00:00', NULL,                  'pendiente', 1, 6, 'usuario1@example.com', 'usuario7@example.com');
+('2026-05-18 10:00:00', '2026-05-18 12:00:00', 'aceptada',  1, 7, 'usuario1@example.com', 'usuario3@example.com'),
+('2026-05-19 09:00:00', NULL,                  'pendiente', 1, 1, 'usuario1@example.com', 'usuario4@example.com'),
+('2026-05-20 15:00:00', '2026-05-20 16:00:00', 'rechazada', 1, 3, 'usuario2@example.com', 'usuario5@example.com'),
+('2026-05-21 11:00:00', '2026-05-21 13:00:00', 'aceptada',  1, 4, 'usuario2@example.com', 'usuario6@example.com'),
+('2026-05-22 08:00:00', NULL,                  'pendiente', 1, 6, 'usuario1@example.com', 'usuario7@example.com');
 
 -- ============================================================
 -- TOKEN QR
 -- ============================================================
 INSERT INTO token_qr (codigo_hash, generado_en, expira_en, activo, id_entrada) VALUES
-('hash_abc123def456', '2025-03-15 19:50:00', '2025-03-15 19:50:30', 0, 1),
-('hash_bcd234efg567', '2025-03-15 19:50:00', '2025-03-15 19:50:30', 0, 2),
-('hash_cde345fgh678', '2025-03-15 19:50:00', '2025-03-15 19:50:30', 1, 3),
-('hash_def456ghi789', '2025-03-15 19:50:00', '2025-03-15 19:50:30', 1, 4),
-('hash_efg567hij890', '2025-03-15 19:50:00', '2025-03-15 19:50:30', 1, 5),
-('hash_fgh678ijk901', '2025-03-15 19:50:00', '2025-03-15 19:50:30', 1, 8),
-('hash_ghi789jkl012', '2025-03-15 19:50:00', '2025-03-15 19:50:30', 1, 9),
+('hash_abc123def456', '2026-06-11 19:50:00', '2026-06-11 19:50:30', 0, 1),
+('hash_bcd234efg567', '2026-06-11 19:50:00', '2026-06-11 19:50:30', 0, 2),
+('hash_cde345fgh678', '2026-06-11 19:50:00', '2026-06-11 19:50:30', 1, 3),
+('hash_def456ghi789', '2026-06-11 19:50:00', '2026-06-11 19:50:30', 1, 4),
+('hash_efg567hij890', '2026-06-11 19:50:00', '2026-06-11 19:50:30', 1, 5),
+('hash_fgh678ijk901', '2026-06-11 19:50:00', '2026-06-11 19:50:30', 1, 8),
+('hash_ghi789jkl012', '2026-06-11 19:50:00', '2026-06-11 19:50:30', 1, 9),
 -- entrada 12 ya consumida, token inactivo
-('hash_hij890klm123', '2025-04-20 15:50:00', '2025-04-20 15:50:30', 0, 12);
+('hash_hij890klm123', '2026-06-18 15:50:00', '2026-06-18 15:50:30', 0, 12);
 
 -- ============================================================
 -- VALIDACION
 -- ============================================================
 INSERT INTO validacion (fecha_hora, mail_funcionario, identificador_disp, id_entrada, id_token) VALUES
-('2025-04-20 16:05:00', 'func3@example.com', 'DISP-F3-001', 12, 8);
+('2026-06-18 16:05:00', 'func3@example.com', 'DISP-F3-001', 12, 8);
 
 SET FOREIGN_KEY_CHECKS = 1;
