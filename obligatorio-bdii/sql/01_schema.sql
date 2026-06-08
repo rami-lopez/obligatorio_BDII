@@ -15,6 +15,7 @@ CREATE TABLE usuario (
     calle               VARCHAR(150)    NOT NULL,
     nro_dir             VARCHAR(20)     NOT NULL,
     cod_postal          VARCHAR(20)     NOT NULL,
+    password_hash       VARCHAR(255)    NOT NULL,
 
     CONSTRAINT pk_usuario           PRIMARY KEY (mail),
     CONSTRAINT uq_usuario_nro_doc   UNIQUE (pais_doc, tipo_doc, nro_doc)
