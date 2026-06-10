@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.db.dependencies import get_current_user, require_admin
-from app.schemas.evento import EventCreate, EventResponse
-from app.services.evento import crear_evento, get_evento
+from app.schemas.event import EventCreate, EventResponse
+from app.services.event import crear_evento, get_evento
 
 router = APIRouter(prefix="/eventos", tags=["eventos"])
 

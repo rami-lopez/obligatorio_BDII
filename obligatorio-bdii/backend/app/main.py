@@ -12,7 +12,7 @@ from app.routers.auth import router as auth_router
 from app.routers.health import router as health_router
 from app.routers.users import router as users_router
 from app.routers.transferencia import router as transferencia_router
-from app.routers.evento import router as evento_router
+from app.routers.event import router as evento_router
 
 
 @asynccontextmanager

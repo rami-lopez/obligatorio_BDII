@@ -1,5 +1,5 @@
 from app.db.database import execute, fetch_all, fetch_one, transaction
-from app.schemas.evento import EventCreate
+from app.schemas.event import EventCreate
 
 async def get_evento(id_evento: int) -> dict | None:
     return await fetch_one(
