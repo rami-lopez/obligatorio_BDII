@@ -1,10 +1,15 @@
 from app.db.database import execute, fetch_all, fetch_one, transaction
 from app.schemas.event import EventCreate
 
-async def get_evento(id_evento: int) -> dict | None:
+async def get_evento(id_evento: int) -> list | None:
     return await fetch_one(
         "SELECT * FROM evento WHERE id_evento = %s",
         (id_evento,),
+    )
+
+async def get_eventos() -> dict | None:
+    return await fetch_all(
+        "SELECT * FROM evento"
     )
 
 async def crear_evento(evento: EventCreate, mail_admin: str) -> dict | None:
