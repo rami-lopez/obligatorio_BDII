@@ -13,11 +13,8 @@ async def get_eventos() -> dict | None:
     )
 
 async def update_evento(id_evento: int, datos: EventUpdate) -> dict | None:
-    print("datos completos:", datos.model_dump())
-
     # verificamos que exista el evento
     existente = await get_evento(id_evento)
-    print("existente!:", existente)
     if existente is None:
         return None
     
@@ -31,18 +28,10 @@ async def update_evento(id_evento: int, datos: EventUpdate) -> dict | None:
             return "tiene_entradas"
         
     # verificamos que no haya superposicion
-
-    print("datos.fecha_hora:", datos.fecha_hora)
-    print("tipo:", type(datos.fecha_hora))
-
     id_estadio_check = datos.id_estadio or existente["id_estadio"]
     fecha_check = datos.fecha_hora or existente["fecha_hora"]
     equipo_local_check = datos.equipo_local or existente["equipo_local"]
     equipo_visitante_check = datos.equipo_visitante or existente["equipo_visitante"]
-
-    print("estadio:", id_estadio_check)
-    print("fecha:", fecha_check)
-    print("id_evento:", id_evento)
 
     superposicion = await fetch_one(
         """
@@ -53,7 +42,6 @@ async def update_evento(id_evento: int, datos: EventUpdate) -> dict | None:
         """,
         (id_estadio_check, fecha_check, id_evento),
     )
-    print("superposicion resultado:", superposicion)
     if superposicion is not None:
         return "superposicion"
 
