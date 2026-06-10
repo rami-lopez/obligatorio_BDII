@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
 
 class EventBase(BaseModel):
     fecha_hora:       datetime
@@ -18,3 +19,9 @@ class EventResponse(EventBase):
 
 class EventCreate(EventBase):
     pass
+
+class EventUpdate(BaseModel):
+    fecha_hora:       Optional[datetime] = None
+    equipo_local:     Optional[str]      = None
+    equipo_visitante: Optional[str]      = None
+    id_estadio:       Optional[int]      = None
