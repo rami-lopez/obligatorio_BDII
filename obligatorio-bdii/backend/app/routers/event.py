@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.db.dependencies import get_current_user, require_admin
-from app.schemas.event import EventCreate, EventResponse
-from app.services.event import crear_evento, get_evento, get_eventos
+from app.schemas.event import EventCreate, EventResponse, EventUpdate
+from app.services.event import crear_evento, get_evento, get_eventos, update_evento
 
 router = APIRouter(prefix="/eventos", tags=["eventos"])
 
@@ -40,5 +40,34 @@ async def listar_eventos(current_user: dict = Depends(get_current_user)):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Eventos no encontrado",
+        )
+    return resultado
+
+@router.patch("/{id_evento}", response_model=EventResponse, status_code=status.HTTP_200_OK)
+async def actualizar_evento(
+    evento: EventUpdate,
+    id_evento: int,
+    current_user: dict = Depends(require_admin),
+):
+    resultado = await update_evento(id_evento, evento)
+    if resultado == "tiene_entradas":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se puede cambiar el estadio, ya hay entradas vendidas para este evento",
+        )
+    if resultado == "superposicion":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ya existe un evento en ese estadio a esa fecha y hora",
+        )
+    if resultado == "superposicion_equipo":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Uno de los equipos ya tiene un partido a esa fecha y hora",
+        )
+    if resultado is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Evento no encontrado",
         )
     return resultado
