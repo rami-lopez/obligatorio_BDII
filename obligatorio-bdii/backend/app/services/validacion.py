@@ -18,3 +18,13 @@ async def get_sectores_asignados(id_evento: int, mail_funcionario: str) -> list 
         """,
         (id_evento, mail_funcionario),
     )
+
+async def get_dispositivos(mail_funcionario: str) -> list | None:
+    return await fetch_all(
+        """
+        SELECT mail_funcionario, identificador 
+        FROM ticketing_mundial.dispositivo 
+        WHERE mail_funcionario = %s
+        """,
+        (mail_funcionario,),
+    )

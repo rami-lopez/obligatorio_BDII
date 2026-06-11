@@ -9,3 +9,10 @@ class SectorValidacionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class DispositivoResponse (BaseModel):
+    mail_funcionario: str
+    identificador: str
+
+    class Config:
+        from_attributes = True
