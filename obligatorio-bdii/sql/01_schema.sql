@@ -161,24 +161,6 @@ CREATE TABLE evento_sector (
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Trigger: consistencia de id_estadio entre evento y sector
--- (reemplaza la FK diferida de PostgreSQL)
-DELIMITER $$
-CREATE TRIGGER trg_evento_sector_consistencia
-BEFORE INSERT ON evento_sector
-FOR EACH ROW
-BEGIN
-    DECLARE v_estadio_evento INT;
-    SELECT id_estadio INTO v_estadio_evento
-    FROM evento WHERE id_evento = NEW.id_evento;
-
-    IF v_estadio_evento <> NEW.id_estadio THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'El estadio del sector no coincide con el estadio del evento';
-    END IF;
-END$$
-DELIMITER ;
-
 -- ============================================================
 -- ASIGNACION (AGG1 -- asignado a -- FUNCIONARIO)
 -- ============================================================
@@ -254,51 +236,6 @@ CREATE TABLE entrada (
     CONSTRAINT ck_entrada_estado            CHECK (estado IN ('activa', 'transferida', 'consumida', 'anulada'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Trigger: maximo 5 entradas por venta
-DELIMITER $$
-CREATE TRIGGER trg_max_entradas_por_venta
-BEFORE INSERT ON entrada
-FOR EACH ROW
-BEGIN
-    DECLARE v_count INT;
-    SELECT COUNT(*) INTO v_count
-    FROM entrada WHERE id_venta = NEW.id_venta;
-
-    IF v_count >= 5 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Una venta no puede tener mas de 5 entradas';
-    END IF;
-END$$
-DELIMITER ;
-
--- Trigger: no superar capacidad del sector por evento
-DELIMITER $$
-CREATE TRIGGER trg_capacidad_sector
-BEFORE INSERT ON entrada
-FOR EACH ROW
-BEGIN
-    DECLARE v_capacidad INT;
-    DECLARE v_vendidas  INT;
-
-    SELECT s.capacidad_max INTO v_capacidad
-    FROM sector s
-    WHERE s.id_estadio = NEW.id_estadio
-      AND s.codigo = NEW.codigo_sector;
-
-    SELECT COUNT(*) INTO v_vendidas
-    FROM entrada
-    WHERE id_evento = NEW.id_evento
-      AND id_estadio = NEW.id_estadio
-      AND codigo_sector = NEW.codigo_sector
-      AND estado <> 'anulada';
-
-    IF v_vendidas >= v_capacidad THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Capacidad maxima del sector alcanzada para este evento';
-    END IF;
-END$$
-DELIMITER ;
-
 -- ============================================================
 -- TRANSFERENCIA (debil de ENTRADA)
 -- ============================================================
@@ -325,25 +262,6 @@ CREATE TABLE transferencia (
     CONSTRAINT ck_transferencia_usuarios    CHECK (mail_origen <> mail_destino)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Trigger: maximo 3 transferencias aceptadas por entrada
-DELIMITER $$
-CREATE TRIGGER trg_max_transferencias
-BEFORE INSERT ON transferencia
-FOR EACH ROW
-BEGIN
-    DECLARE v_count INT;
-    SELECT COUNT(*) INTO v_count
-    FROM transferencia
-    WHERE id_entrada = NEW.id_entrada
-      AND estado = 'aceptada';
-
-    IF v_count >= 3 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Una entrada no puede tener mas de 3 transferencias';
-    END IF;
-END$$
-DELIMITER ;
-
 -- ============================================================
 -- TOKEN QR (debil de ENTRADA)
 -- ============================================================
@@ -362,27 +280,6 @@ CREATE TABLE token_qr (
         REFERENCES entrada (id_entrada)
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Trigger: solo un token activo por entrada
--- (reemplaza el indice unico parcial de PostgreSQL)
-DELIMITER $$
-CREATE TRIGGER trg_token_activo_unico
-BEFORE INSERT ON token_qr
-FOR EACH ROW
-BEGIN
-    DECLARE v_count INT;
-    IF NEW.activo = 1 THEN
-        SELECT COUNT(*) INTO v_count
-        FROM token_qr
-        WHERE id_entrada = NEW.id_entrada AND activo = 1;
-
-        IF v_count >= 1 THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Ya existe un token activo para esta entrada';
-        END IF;
-    END IF;
-END$$
-DELIMITER ;
 
 -- ============================================================
 -- VALIDACION (AGG2 -- valida -- ENTRADA, acepta TOKEN QR)
