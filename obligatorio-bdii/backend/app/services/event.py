@@ -12,12 +12,30 @@ async def get_eventos() -> dict | None:
         "SELECT * FROM evento"
     )
 
-async def update_evento(id_evento: int, datos: EventUpdate) -> dict | None:
-    print("datos completos:", datos.model_dump())
+async def get_sectores_evento(id_evento: int) -> list | None:
+    return await fetch_all(
+        """
+        SELECT
+            s.codigo,
+            s.capacidad_max,
+            s.costo,
+            COUNT(e.id_entrada) AS vendidas,
+            s.capacidad_max - COUNT(e.id_entrada) AS disponibles
+        FROM ticketing_mundial.evento_sector es
+        JOIN ticketing_mundial.sector s ON s.id_estadio = es.id_estadio AND s.codigo = es.codigo_sector
+        LEFT JOIN ticketing_mundial.entrada e ON e.id_estadio = s.id_estadio
+                        AND e.codigo_sector = s.codigo
+                        AND e.id_evento = es.id_evento
+                        AND e.estado != 'anulada'
+        WHERE es.id_evento = %s
+        GROUP BY s.codigo, s.capacidad_max, s.costo;
+        """,
+        (id_evento,),
+    )
 
+async def update_evento(id_evento: int, datos: EventUpdate) -> dict | None:
     # verificamos que exista el evento
     existente = await get_evento(id_evento)
-    print("existente!:", existente)
     if existente is None:
         return None
     
@@ -31,18 +49,10 @@ async def update_evento(id_evento: int, datos: EventUpdate) -> dict | None:
             return "tiene_entradas"
         
     # verificamos que no haya superposicion
-
-    print("datos.fecha_hora:", datos.fecha_hora)
-    print("tipo:", type(datos.fecha_hora))
-
     id_estadio_check = datos.id_estadio or existente["id_estadio"]
     fecha_check = datos.fecha_hora or existente["fecha_hora"]
     equipo_local_check = datos.equipo_local or existente["equipo_local"]
     equipo_visitante_check = datos.equipo_visitante or existente["equipo_visitante"]
-
-    print("estadio:", id_estadio_check)
-    print("fecha:", fecha_check)
-    print("id_evento:", id_evento)
 
     superposicion = await fetch_one(
         """
@@ -53,7 +63,6 @@ async def update_evento(id_evento: int, datos: EventUpdate) -> dict | None:
         """,
         (id_estadio_check, fecha_check, id_evento),
     )
-    print("superposicion resultado:", superposicion)
     if superposicion is not None:
         return "superposicion"
 
@@ -130,4 +139,36 @@ async def crear_evento(evento: EventCreate, mail_admin: str) -> dict | None:
     return creado or {}
 
         
+async def habilitar_sector(id_evento: int, codigo_sector: str) -> dict | None:
+    
+    evento = await get_evento(id_evento)
+    if evento is None:
+        return None
+
+    # verificamos que el sector existe en el estadio de ese evento
+    sector = await fetch_one(
+        "SELECT 1 FROM ticketing_mundial.sector WHERE id_estadio = %s AND codigo = %s",
+        (evento["id_estadio"], codigo_sector),
+    )
+    if sector is None:
+        return "sector_no_existe"
+
+    # verificamos que el sector no este ya habilitado
+    ya_habilitado = await fetch_one(
+        "SELECT 1 FROM evento_sector WHERE id_evento = %s AND codigo_sector = %s",
+        (id_evento, codigo_sector),
+    )
+    if ya_habilitado is not None:
+        return "ya_habilitado"
+
+    # insertamos en evento_sector
+    await execute(
+        """
+        INSERT INTO evento_sector (id_evento, id_estadio, codigo_sector)
+        VALUES (%s, %s, %s)
+        """,
+        (id_evento, evento["id_estadio"], codigo_sector),
+    )
+
+    return await get_sectores_evento(id_evento)
     
