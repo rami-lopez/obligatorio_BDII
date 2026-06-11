@@ -13,6 +13,8 @@ from app.routers.health import router as health_router
 from app.routers.users import router as users_router
 from app.routers.transferencia import router as transferencia_router
 from app.routers.event import router as evento_router
+from app.routers.validacion import router as validacion_router
+from app.routers.reportes import router as reporte_router
 
 
 @asynccontextmanager
@@ -46,6 +48,8 @@ app.include_router(users_router)
 app.include_router(admin_users_router)
 app.include_router(transferencia_router)
 app.include_router(evento_router)
+app.include_router(validacion_router)
+app.include_router(reporte_router)
 
 
 def custom_openapi() -> dict:
