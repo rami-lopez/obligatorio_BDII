@@ -25,3 +25,17 @@ class EventUpdate(BaseModel):
     equipo_local:     Optional[str]      = None
     equipo_visitante: Optional[str]      = None
     id_estadio:       Optional[int]      = None
+
+
+class SectorEventoResponse(BaseModel):
+    codigo: str
+    capacidad_max: int
+    costo: float
+    vendidas: int
+    disponibles: int
+
+    class Config:
+        from_attributes = True
+
+class HabilitarSectorRequest(BaseModel):
+    codigo_sector: str

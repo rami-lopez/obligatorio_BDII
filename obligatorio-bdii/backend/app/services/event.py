@@ -12,6 +12,27 @@ async def get_eventos() -> dict | None:
         "SELECT * FROM evento"
     )
 
+async def get_sectores_evento(id_evento: int) -> list | None:
+    return await fetch_all(
+        """
+        SELECT
+            s.codigo,
+            s.capacidad_max,
+            s.costo,
+            COUNT(e.id_entrada) AS vendidas,
+            s.capacidad_max - COUNT(e.id_entrada) AS disponibles
+        FROM ticketing_mundial.evento_sector es
+        JOIN ticketing_mundial.sector s ON s.id_estadio = es.id_estadio AND s.codigo = es.codigo_sector
+        LEFT JOIN ticketing_mundial.entrada e ON e.id_estadio = s.id_estadio
+                        AND e.codigo_sector = s.codigo
+                        AND e.id_evento = es.id_evento
+                        AND e.estado != 'anulada'
+        WHERE es.id_evento = %s
+        GROUP BY s.codigo, s.capacidad_max, s.costo;
+        """,
+        (id_evento,),
+    )
+
 async def update_evento(id_evento: int, datos: EventUpdate) -> dict | None:
     # verificamos que exista el evento
     existente = await get_evento(id_evento)
@@ -118,4 +139,36 @@ async def crear_evento(evento: EventCreate, mail_admin: str) -> dict | None:
     return creado or {}
 
         
+async def habilitar_sector(id_evento: int, codigo_sector: str) -> dict | None:
+    
+    evento = await get_evento(id_evento)
+    if evento is None:
+        return None
+
+    # verificamos que el sector existe en el estadio de ese evento
+    sector = await fetch_one(
+        "SELECT 1 FROM ticketing_mundial.sector WHERE id_estadio = %s AND codigo = %s",
+        (evento["id_estadio"], codigo_sector),
+    )
+    if sector is None:
+        return "sector_no_existe"
+
+    # verificamos que el sector no este ya habilitado
+    ya_habilitado = await fetch_one(
+        "SELECT 1 FROM evento_sector WHERE id_evento = %s AND codigo_sector = %s",
+        (id_evento, codigo_sector),
+    )
+    if ya_habilitado is not None:
+        return "ya_habilitado"
+
+    # insertamos en evento_sector
+    await execute(
+        """
+        INSERT INTO evento_sector (id_evento, id_estadio, codigo_sector)
+        VALUES (%s, %s, %s)
+        """,
+        (id_evento, evento["id_estadio"], codigo_sector),
+    )
+
+    return await get_sectores_evento(id_evento)
     
