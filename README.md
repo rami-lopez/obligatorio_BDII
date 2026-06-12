@@ -2,46 +2,133 @@
 
 **Integrantes:** Andrea Gonzalez, Nicolas Lenzuen, Ramiro Lopez
 
-## Stack
-- **Base de datos:** MySQL + InnoDB
-- **Backend:** Python + FastAPI + aiomysql
-- **Frontend:** React + Vite
+# Ticketing Mundial 2026 — API
 
-## Setup (como correr)
+API REST con FastAPI + MySQL  para el sistema
+de ticketing del Mundial 2026.
 
-### Base de datos
+## Requisitos
+
+- Python 3.12+
+- Docker y Docker Compose
+- Archivo `.env.local` con las variables de entorno,
+  incluyendo configuración de Auth0 y conexión a la base de datos.
+
+---
+
+## Modo 1 — Desarrollo (solo backend, base en Docker)
+
+Para desarrollar con recarga automática (`--reload`), conviene correr la
+base en Docker y la API directo en tu máquina.
+
+### Levantar solo la base de datos
+
 ```bash
-cd sql
-./reset_db.sh
+docker compose up -d mysql_local
 ```
 
-### Backend
+Esto levanta MySQL en `localhost:3306` con la base `ticketing_mundial` ya
+inicializada con el DDL.
+
+### Levantar la API en local
+
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env      # completar con tus credenciales
-uvicorn app.main:app --reload
+
+APP_ENV=local uvicorn app.main:app --reload
 ```
 
-### Auth0
-- Configurar `AUTH0_DOMAIN`, `AUTH0_AUDIENCE` y `AUTH0_ALGORITHMS=RS256` en `.env.local` o `.env.facultad`.
-- Para probar desde Swagger, abrir `/docs`, usar `Authorize` y pegar el Bearer token emitido por Auth0.
-- El endpoint `POST /usuarios/completar-registro` completa el alta local usando el `sub` del token.
+La API queda disponible en `http://localhost:8000`, con Swagger en
+`http://localhost:8000/docs`.
 
-### Alternar entre bases de datos MySQL
-- Local con Docker: `uvicorn app.main:app --reload`
-- Facultad: `APP_ENV=facultad uvicorn app.main:app --reload`
-- Levantar Docker: `docker compose up -d`  
-	El contenedor publica MySQL en `localhost:3307` para evitar choques con una instancia local en `3306`.
-- Bajar Docker: `docker compose down`
-- Borrar datos persistidos: `docker compose down -v`
+### Bajar la base
 
-### Frontend
 ```bash
-cd frontend
-npm install
-cp .env.example .env
-npm run dev
+docker compose down            # los datos persisten
+docker compose down -v         # borra también los datos
 ```
+
+---
+
+## Modo 2 — Todo en Docker (API + base)
+
+Para correr el stack completo containerizado:
+
+```bash
+docker compose up --build -d
+```
+
+**Importante:** si modificás código y volvés a levantar el stack, tenés
+que usar `--build` para que la imagen de la API se reconstruya con los
+cambios. Si solo hacés `docker compose up -d`, Docker reutiliza la imagen
+vieja y no vas a ver tus cambios reflejados.
+
+```bash
+docker compose up --build -d
+```
+
+La API queda en `http://localhost:8000` y la base en `localhost:3306`.
+
+### Ver logs
+
+```bash
+docker compose logs -f api
+```
+
+### Bajar todo
+
+```bash
+docker compose down            # los datos de la base persisten
+docker compose down -v         # borra también los datos
+```
+
+---
+
+## Conectarse a la base desde DataGrip / cliente MySQL
+
+- **Host**: `localhost`
+- **Port**: `3306`
+- **Database**: `ticketing_mundial`
+- **User**: `ticketing_user`
+- **Password**: `ticketing_pass`
+
+El container de la base tiene que estar corriendo (`docker compose up -d mysql_local`
+o `docker compose up -d`).
+
+---
+
+## Entornos
+
+La variable `APP_ENV` determina qué archivo de configuración se carga
+(`.env.{APP_ENV}`):
+
+- `APP_ENV=local` → base de datos local en Docker
+- `APP_ENV=facultad` → base de datos remota de la facultad
+
+En el `docker-compose.yml`, el servicio `api` ya tiene `APP_ENV=local`
+configurado para apuntar a `mysql_local`.
+
+Para correr la API en local apuntando a la base de la facultad:
+
+```bash
+APP_ENV=facultad uvicorn app.main:app --reload
+```
+
+---
+
+## Autenticación
+
+La autenticación la maneja Auth0. Las variables necesarias
+(`AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `AUTH0_CLIENT_ID`, `AUTH0_ALGORITHMS`)
+ya están incluidas en el `.env.local` / `.env.facultad` provisto.
+
+Para probar los endpoints protegidos desde Swagger (`/docs`):
+
+1. Click en **Authorize** (arriba a la derecha)
+2. Iniciar sesión con un usuario de Auth0
+3. Los endpoints que requieran autenticación van a incluir el token
+   automáticamente al usar **Try it out**
+
+Para cambiar de usuario, abrir otra pestaña en incognito
