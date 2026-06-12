@@ -2,7 +2,6 @@ services:
   mysql:
     image: mysql:8.0
     container_name: ticketing_db
-    command: --default-authentication-plugin=mysql_native_password
     environment:
       MYSQL_DATABASE: ticketing_mundial
       MYSQL_USER: ticketing_user

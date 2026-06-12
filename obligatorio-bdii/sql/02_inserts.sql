@@ -1,13 +1,5 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
--- Credenciales de seed compatibles con app.auth.hashing:
--- admin*: Admin2026!
--- func*: Func2026!
--- usuario*: User2026!
-SET @pwd_admin = '$2b$12$dd83eM57wMK/fJaDGz.iiu3CrU36lxbdZe1aWpC3.hNvOXs4x7gEG';
-SET @pwd_func = '$2b$12$ZXo0b8OgY1cQ1/g27.GOmubLUKbaOIhn6J2eVEUYIsza6TN9tJlyS';
-SET @pwd_user = '$2b$12$M/KxU7YHtQuojF2yXfx7iOPLyjngYbhfPXSFj7miYJfpgVah0kBRe';
-
 -- ============================================================
 -- SEDE
 -- ============================================================
@@ -21,21 +13,21 @@ INSERT INTO sede (nombre, pais) VALUES
 -- ============================================================
 -- USUARIO
 -- ============================================================
-INSERT INTO usuario (mail, pais_doc, tipo_doc, nro_doc, pais_dir, localidad, calle, nro_dir, cod_postal, password_hash) VALUES
-('admin1@example.com',    'Uruguay',   'CI',       '12345678',  'Uruguay',   'Montevideo',    'Av. 18 de Julio',  '1234', '11000',    @pwd_admin),
-('admin2@example.com',    'Argentina', 'DNI',      '30123456',  'Argentina', 'Buenos Aires',  'Corrientes',       '800',  'C1043',    @pwd_admin),
-('admin3@example.com',    'Chile',     'RUT',      '12345678-9','Chile',     'Santiago',      'Providencia',      '500',  '7500000',  @pwd_admin),
-('func1@example.com',     'Uruguay',   'CI',       '23456789',  'Uruguay',   'Montevideo',    'Bulevar Artigas',  '2000', '11300',    @pwd_func),
-('func2@example.com',     'Uruguay',   'CI',       '34567890',  'Uruguay',   'Canelones',     'Av. Italia',       '450',  '90000',    @pwd_func),
-('func3@example.com',     'Argentina', 'DNI',      '40123456',  'Argentina', 'Rosario',       'Córdoba',          '1200', 'S2000',    @pwd_func),
-('func4@example.com',     'Uruguay',   'CI',       '45678901',  'Uruguay',   'Montevideo',    'Colonia',          '900',  '11100',    @pwd_func),
-('usuario1@example.com',  'Uruguay',   'CI',       '56789012',  'Uruguay',   'Montevideo',    'Rivera',           '3100', '11600',    @pwd_user),
-('usuario2@example.com',  'Argentina', 'DNI',      '50123456',  'Argentina', 'Mendoza',       'San Martín',       '200',  'M5500',    @pwd_user),
-('usuario3@example.com',  'Brasil',    'CPF',      '123.456.789-00', 'Brasil','Sao Paulo',    'Paulista',         '1000', '01310-100', @pwd_user),
-('usuario4@example.com',  'Uruguay',   'CI',       '67890123',  'Uruguay',   'Paysandu',      'Leandro Gomez',    '500',  '60000',    @pwd_user),
-('usuario5@example.com',  'Chile',     'RUT',      '98765432-1','Chile',     'Valparaiso',    'Pedro Montt',      '300',  '2360000',  @pwd_user),
-('usuario6@example.com',  'Uruguay',   'CI',       '78901234',  'Uruguay',   'Montevideo',    'Jackson',          '1400', '11400',    @pwd_user),
-('usuario7@example.com',  'Colombia',  'CC',       '1023456789','Colombia',  'Bogota',        'Carrera 7',        '32',   '110111',   @pwd_user);
+INSERT INTO usuario (mail, auth0_sub, pais_doc, tipo_doc, nro_doc, pais_dir, localidad, calle, nro_dir, cod_postal) VALUES
+('admin1@example.com',    'auth0|6a2b317010e69cc88bfca67c',    'Uruguay',   'CI',       '12345678',  'Uruguay',   'Montevideo',    'Av. 18 de Julio',  '1234', '11000'),
+('admin2@example.com',    'auth0|admin2',    'Argentina', 'DNI',      '30123456',  'Argentina', 'Buenos Aires',  'Corrientes',       '800',  'C1043'),
+('admin3@example.com',    'auth0|admin3',    'Chile',     'RUT',      '12345678-9','Chile',     'Santiago',      'Providencia',      '500',  '7500000'),
+('func1@example.com',     'auth0|func1',     'Uruguay',   'CI',       '23456789',  'Uruguay',   'Montevideo',    'Bulevar Artigas',  '2000', '11300'),
+('func2@example.com',     'auth0|func2',     'Uruguay',   'CI',       '34567890',  'Uruguay',   'Canelones',     'Av. Italia',       '450',  '90000'),
+('func3@example.com',     'auth0|func3',     'Argentina', 'DNI',      '40123456',  'Argentina', 'Rosario',       'Córdoba',          '1200', 'S2000'),
+('func4@example.com',     'auth0|func4',     'Uruguay',   'CI',       '45678901',  'Uruguay',   'Montevideo',    'Colonia',          '900',  '11100'),
+('usuario1@example.com',  'auth0|user1',     'Uruguay',   'CI',       '56789012',  'Uruguay',   'Montevideo',    'Rivera',           '3100', '11600'),
+('usuario2@example.com',  'auth0|user2',     'Argentina', 'DNI',      '50123456',  'Argentina', 'Mendoza',       'San Martín',       '200',  'M5500'),
+('usuario3@example.com',  'auth0|user3',     'Brasil',    'CPF',      '123.456.789-00', 'Brasil','Sao Paulo',    'Paulista',         '1000', '01310-100'),
+('usuario4@example.com',  'auth0|user4',     'Uruguay',   'CI',       '67890123',  'Uruguay',   'Paysandu',      'Leandro Gomez',    '500',  '60000'),
+('usuario5@example.com',  'auth0|user5',     'Chile',     'RUT',      '98765432-1','Chile',     'Valparaiso',    'Pedro Montt',      '300',  '2360000'),
+('usuario6@example.com',  'auth0|user6',     'Uruguay',   'CI',       '78901234',  'Uruguay',   'Montevideo',    'Jackson',          '1400', '11400'),
+('usuario7@example.com',  'auth0|user7',     'Colombia',  'CC',       '1023456789','Colombia',  'Bogota',        'Carrera 7',        '32',   '110111');
 
 -- ============================================================
 -- ADMINISTRADOR

@@ -25,6 +25,11 @@ cp .env.example .env      # completar con tus credenciales
 uvicorn app.main:app --reload
 ```
 
+### Auth0
+- Configurar `AUTH0_DOMAIN`, `AUTH0_AUDIENCE` y `AUTH0_ALGORITHMS=RS256` en `.env.local` o `.env.facultad`.
+- Para probar desde Swagger, abrir `/docs`, usar `Authorize` y pegar el Bearer token emitido por Auth0.
+- El endpoint `POST /usuarios/completar-registro` completa el alta local usando el `sub` del token.
+
 ### Alternar entre bases de datos MySQL
 - Local con Docker: `uvicorn app.main:app --reload`
 - Facultad: `APP_ENV=facultad uvicorn app.main:app --reload`

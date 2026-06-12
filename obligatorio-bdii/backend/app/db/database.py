@@ -15,26 +15,12 @@ from app.core.config import get_settings
 logger = logging.getLogger(__name__)
 _pool: aiomysql.Pool | None = None
 
-
-def _load_environment_file() -> str:
-	app_env = os.getenv("APP_ENV", "local").strip() or "local"
-	project_root = Path(__file__).resolve().parents[3]
-	environment_file = project_root / f".env.{app_env}"
-
-	if environment_file.exists():
-		load_dotenv(environment_file, override=True)
-	else:
-		logger.warning("Environment file not found for APP_ENV=%s: %s", app_env, environment_file)
-
-	return app_env
-
-
 async def init_pool() -> aiomysql.Pool:
 	global _pool
 
 	if _pool is None:
-		app_env = _load_environment_file()
 		settings = get_settings()
+		print(settings.mysql_user)
 		try:
 			_pool = await aiomysql.create_pool(
 				host=settings.mysql_host,
@@ -48,7 +34,7 @@ async def init_pool() -> aiomysql.Pool:
 				charset=settings.mysql_charset,
 			)
 		except Exception:
-			logger.exception("Unable to connect to MySQL using APP_ENV=%s", app_env)
+			logger.exception("Unable to connect to MySQL")
 			raise
 
 	return _pool

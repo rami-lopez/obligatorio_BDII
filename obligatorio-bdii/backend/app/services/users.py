@@ -2,15 +2,14 @@ from __future__ import annotations
 
 from fastapi import HTTPException, status
 
-from app.auth.hashing import hash_password
 from app.db.database import execute, fetch_all, fetch_one, transaction
 
 
-async def get_user_profile(mail: str) -> dict | None:
-    user_row = await fetch_one(
-        """
+def _profile_query() -> str:
+    return """
         SELECT
             u.mail,
+            u.auth0_sub,
             u.pais_doc,
             u.tipo_doc,
             u.nro_doc,
@@ -33,8 +32,12 @@ async def get_user_profile(mail: str) -> dict | None:
         LEFT JOIN administrador a ON a.mail_usuario = u.mail
         LEFT JOIN funcionario f ON f.mail_usuario = u.mail
         LEFT JOIN usuario_general ug ON ug.mail_usuario = u.mail
-        WHERE u.mail = %s
-        """,
+    """
+
+
+async def get_user_profile(mail: str) -> dict | None:
+    user_row = await fetch_one(
+        _profile_query() + " WHERE u.mail = %s",
         (mail,),
     )
     if user_row is None:
@@ -49,23 +52,31 @@ async def get_user_profile(mail: str) -> dict | None:
     return user_row
 
 
-async def authenticate_user(mail: str, pais_doc: str, tipo_doc: str, nro_doc: str) -> dict | None:
-    user = await fetch_one(
-        """
-        SELECT mail
-        FROM usuario
-        WHERE mail = %s AND pais_doc = %s AND tipo_doc = %s AND nro_doc = %s
-        """,
-        (mail, pais_doc, tipo_doc, nro_doc),
+async def get_user_profile_by_auth0_sub(auth0_sub: str) -> dict | None:
+    user_row = await fetch_one(
+        _profile_query() + " WHERE u.auth0_sub = %s",
+        (auth0_sub,),
     )
-    if user is None:
+    if user_row is None:
         return None
-    return await get_user_profile(mail)
+
+    phones = await fetch_all(
+        "SELECT numero FROM telefono WHERE mail_usuario = %s ORDER BY numero",
+        (user_row["mail"],),
+    )
+    user_row["telefonos"] = [row["numero"] for row in phones]
+    user_row["verificado"] = bool(user_row.get("verificado"))
+    return user_row
 
 
-async def create_user(payload: dict, role: str = "usuario_general") -> dict:
-    mail = payload["mail"]
-    password_hash = hash_password(payload["password"])
+async def complete_registration(payload: dict, auth0_sub: str, mail: str, auth0_role: str | None) -> dict:
+    requested_role = payload.get("tipo_usuario", "usuario_general")
+    if requested_role != "usuario_general" and requested_role != auth0_role:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions for requested user type")
+
+    existing_sub = await fetch_one("SELECT mail FROM usuario WHERE auth0_sub = %s", (auth0_sub,))
+    if existing_sub is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El usuario ya completó el registro")
 
     existing_user = await fetch_one("SELECT mail FROM usuario WHERE mail = %s", (mail,))
     if existing_user is not None:
@@ -83,11 +94,12 @@ async def create_user(payload: dict, role: str = "usuario_general") -> dict:
             await cursor.execute(
                 """
                 INSERT INTO usuario (
-                    mail, pais_doc, tipo_doc, nro_doc, pais_dir, localidad, calle, nro_dir, cod_postal, password_hash
+                    mail, auth0_sub, pais_doc, tipo_doc, nro_doc, pais_dir, localidad, calle, nro_dir, cod_postal
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     mail,
+                    auth0_sub,
                     payload["pais_doc"],
                     payload["tipo_doc"],
                     payload["nro_doc"],
@@ -96,7 +108,6 @@ async def create_user(payload: dict, role: str = "usuario_general") -> dict:
                     payload["calle"],
                     payload["nro_dir"],
                     payload["cod_postal"],
-                    password_hash,
                 ),
             )
 
@@ -106,7 +117,7 @@ async def create_user(payload: dict, role: str = "usuario_general") -> dict:
                     (mail, telefono),
                 )
 
-            if role == "administrador":
+            if requested_role == "administrador":
                 if payload.get("id_sede") is None:
                     raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="id_sede es requerido para administrador")
                 await cursor.execute(
@@ -116,7 +127,7 @@ async def create_user(payload: dict, role: str = "usuario_general") -> dict:
                     """,
                     (mail, payload["id_sede"]),
                 )
-            elif role == "funcionario":
+            elif requested_role == "funcionario":
                 if not payload.get("nro_legajo"):
                     raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="nro_legajo es requerido para funcionario")
                 await cursor.execute(
@@ -135,7 +146,7 @@ async def create_user(payload: dict, role: str = "usuario_general") -> dict:
                     (mail, payload.get("verificado", False)),
                 )
 
-    created = await get_user_profile(mail)
+    created = await get_user_profile_by_auth0_sub(auth0_sub)
     return created or {}
 
 

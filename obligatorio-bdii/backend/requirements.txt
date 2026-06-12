@@ -4,6 +4,5 @@ aiomysql
 cryptography
 python-dotenv
 pydantic[email]
-PyJWT
-passlib[bcrypt]
-python-multipart
+python-jose[cryptography]
+httpx

@@ -7,6 +7,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 CREATE TABLE usuario (
     mail                VARCHAR(255)    NOT NULL,
+    auth0_sub           VARCHAR(255)    NOT NULL,
     pais_doc            VARCHAR(100)    NOT NULL,
     tipo_doc            VARCHAR(50)     NOT NULL,
     nro_doc             VARCHAR(50)     NOT NULL,
@@ -15,9 +16,9 @@ CREATE TABLE usuario (
     calle               VARCHAR(150)    NOT NULL,
     nro_dir             VARCHAR(20)     NOT NULL,
     cod_postal          VARCHAR(20)     NOT NULL,
-    password_hash       VARCHAR(255)    NOT NULL,
 
     CONSTRAINT pk_usuario           PRIMARY KEY (mail),
+    CONSTRAINT uq_usuario_auth0_sub UNIQUE (auth0_sub),
     CONSTRAINT uq_usuario_nro_doc   UNIQUE (pais_doc, tipo_doc, nro_doc)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

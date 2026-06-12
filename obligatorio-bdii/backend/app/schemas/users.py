@@ -21,22 +21,20 @@ class UserBase(BaseModel):
     cod_postal: str
 
 
-class PublicUserRegister(UserBase):
+class CompleteRegistrationRequest(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    password: str
-    role: UserRole = "usuario_general"
+    pais_doc: str
+    tipo_doc: str
+    nro_doc: str
+    pais_dir: str
+    localidad: str
+    calle: str
+    nro_dir: str
+    cod_postal: str
+    tipo_usuario: UserRole = "usuario_general"
     telefonos: list[str] = Field(default_factory=list)
     verificado: bool = False
-
-
-class AdminUserCreate(UserBase):
-    model_config = ConfigDict(from_attributes=True)
-
-    password: str
-    telefonos: list[str] = Field(default_factory=list)
-    id_sede: int | None = None
-    nro_legajo: str | None = None
 
 
 class UserUpdate(BaseModel):
@@ -56,6 +54,7 @@ class UserProfile(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
     role: UserRole
+    auth0_sub: str | None = None
     telefonos: list[str] = Field(default_factory=list)
     fecha_registro: date | None = None
     verificado: bool = False
