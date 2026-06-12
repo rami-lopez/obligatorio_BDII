@@ -2,6 +2,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: ticketing_db
+    command: --default-authentication-plugin=mysql_native_password --log_bin_trust_function_creators=1
     environment:
       MYSQL_DATABASE: ticketing_mundial
       MYSQL_USER: ticketing_user
@@ -13,6 +14,7 @@ services:
     volumes:
       - ./sql/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
       - ./sql/02_inserts.sql:/docker-entrypoint-initdb.d/02_inserts.sql:ro
+      - ./sql/05_triggers.sql:/docker-entrypoint-initdb.d/05_triggers.sql:ro
     tmpfs:
       - /var/lib/mysql
     healthcheck:
