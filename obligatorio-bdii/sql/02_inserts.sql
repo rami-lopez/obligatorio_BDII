@@ -14,21 +14,22 @@ INSERT INTO sede (nombre, pais) VALUES
 -- USUARIO
 -- ============================================================
 INSERT INTO usuario (mail, auth0_sub, pais_doc, tipo_doc, nro_doc, pais_dir, localidad, calle, nro_dir, cod_postal) VALUES
-('admin1@example.com',    'auth0|6a2b317010e69cc88bfca67c',    'Uruguay',   'CI',       '12345678',  'Uruguay',   'Montevideo',    'Av. 18 de Julio',  '1234', '11000'),
-('admin2@example.com',    'auth0|admin2',    'Argentina', 'DNI',      '30123456',  'Argentina', 'Buenos Aires',  'Corrientes',       '800',  'C1043'),
-('admin3@example.com',    'auth0|admin3',    'Chile',     'RUT',      '12345678-9','Chile',     'Santiago',      'Providencia',      '500',  '7500000'),
-('func1@example.com',     'auth0|func1',     'Uruguay',   'CI',       '23456789',  'Uruguay',   'Montevideo',    'Bulevar Artigas',  '2000', '11300'),
-('func2@example.com',     'auth0|func2',     'Uruguay',   'CI',       '34567890',  'Uruguay',   'Canelones',     'Av. Italia',       '450',  '90000'),
-('func3@example.com',     'auth0|func3',     'Argentina', 'DNI',      '40123456',  'Argentina', 'Rosario',       'Córdoba',          '1200', 'S2000'),
-('func4@example.com',     'auth0|func4',     'Uruguay',   'CI',       '45678901',  'Uruguay',   'Montevideo',    'Colonia',          '900',  '11100'),
-('usuario1@example.com',  'auth0|user1',     'Uruguay',   'CI',       '56789012',  'Uruguay',   'Montevideo',    'Rivera',           '3100', '11600'),
-('usuario2@example.com',  'auth0|user2',     'Argentina', 'DNI',      '50123456',  'Argentina', 'Mendoza',       'San Martín',       '200',  'M5500'),
-('usuario3@example.com',  'auth0|user3',     'Brasil',    'CPF',      '123.456.789-00', 'Brasil','Sao Paulo',    'Paulista',         '1000', '01310-100'),
-('usuario4@example.com',  'auth0|user4',     'Uruguay',   'CI',       '67890123',  'Uruguay',   'Paysandu',      'Leandro Gomez',    '500',  '60000'),
-('usuario5@example.com',  'auth0|user5',     'Chile',     'RUT',      '98765432-1','Chile',     'Valparaiso',    'Pedro Montt',      '300',  '2360000'),
-('usuario6@example.com',  'auth0|user6',     'Uruguay',   'CI',       '78901234',  'Uruguay',   'Montevideo',    'Jackson',          '1400', '11400'),
-('usuario7@example.com',  'auth0|user7',     'Colombia',  'CC',       '1023456789','Colombia',  'Bogota',        'Carrera 7',        '32',   '110111');
+('admin1@example.com',   'auth0|6a2b317010e69cc88bfca67c', 'Uruguay',   'CI',  '12345678',       'Uruguay',   'Montevideo',   'Av. 18 de Julio', '1234', '11000'),
+('admin2@example.com',   'auth0|6a2b390f62801710359fb97f', 'Argentina', 'DNI', '30123456',       'Argentina', 'Buenos Aires', 'Corrientes',      '800',  'C1043'),
+('admin3@example.com',   'auth0|6a2b390f62801710359fb980', 'Chile',     'RUT', '12345678-9',     'Chile',     'Santiago',     'Providencia',     '500',  '7500000'),
 
+('func1@example.com',    'auth0|6a2b390f62801710359fb981', 'Uruguay',   'CI',  '23456789',       'Uruguay',   'Montevideo',   'Bulevar Artigas', '2000', '11300'),
+('func2@example.com',    'auth0|6a2b390f62801710359fb982', 'Uruguay',   'CI',  '34567890',       'Uruguay',   'Canelones',    'Av. Italia',      '450',  '90000'),
+('func3@example.com',    'auth0|6a2b390f62801710359fb983', 'Argentina', 'DNI', '40123456',       'Argentina', 'Rosario',      'Córdoba',         '1200', 'S2000'),
+('func4@example.com',    'auth0|6a2b390f62801710359fb984', 'Uruguay',   'CI',  '45678901',       'Uruguay',   'Montevideo',   'Colonia',         '900',  '11100'),
+
+('usuario1@example.com', 'auth0|6a2b390f62801710359fb985', 'Uruguay',   'CI',  '56789012',       'Uruguay',   'Montevideo',   'Rivera',          '3100', '11600'),
+('usuario2@example.com', 'auth0|6a2b390f62801710359fb986', 'Argentina', 'DNI', '50123456',       'Argentina', 'Mendoza',      'San Martín',      '200',  'M5500'),
+('usuario3@example.com', 'auth0|6a2b390f62801710359fb987', 'Brasil',    'CPF', '123.456.789-00', 'Brasil',    'Sao Paulo',    'Paulista',        '1000', '01310-100'),
+('usuario4@example.com', 'auth0|6a2b390f62801710359fb988', 'Uruguay',   'CI',  '67890123',       'Uruguay',   'Paysandu',     'Leandro Gomez',   '500',  '60000'),
+('usuario5@example.com', 'auth0|6a2b390f62801710359fb989', 'Chile',     'RUT', '98765432-1',     'Chile',     'Valparaiso',   'Pedro Montt',     '300',  '2360000'),
+('usuario6@example.com', 'auth0|6a2b390f62801710359fb98a', 'Uruguay',   'CI',  '78901234',       'Uruguay',   'Montevideo',   'Jackson',         '1400', '11400'),
+('usuario7@example.com', 'auth0|6a2b390f62801710359fb98b', 'Colombia',  'CC',  '1023456789',     'Colombia',  'Bogota',       'Carrera 7',       '32',   '110111');
 -- ============================================================
 -- ADMINISTRADOR
 -- ============================================================

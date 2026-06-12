@@ -69,11 +69,7 @@ async def get_user_profile_by_auth0_sub(auth0_sub: str) -> dict | None:
     return user_row
 
 
-async def complete_registration(payload: dict, auth0_sub: str, mail: str, auth0_role: str | None) -> dict:
-    requested_role = payload.get("tipo_usuario", "usuario_general")
-    if requested_role != "usuario_general" and requested_role != auth0_role:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions for requested user type")
-
+async def _check_registration_conflicts(auth0_sub: str, mail: str, pais_doc: str, tipo_doc: str, nro_doc: str) -> None:
     existing_sub = await fetch_one("SELECT mail FROM usuario WHERE auth0_sub = %s", (auth0_sub,))
     if existing_sub is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El usuario ya completó el registro")
@@ -84,70 +80,119 @@ async def complete_registration(payload: dict, auth0_sub: str, mail: str, auth0_
 
     duplicate_document = await fetch_one(
         "SELECT mail FROM usuario WHERE pais_doc = %s AND tipo_doc = %s AND nro_doc = %s",
-        (payload["pais_doc"], payload["tipo_doc"], payload["nro_doc"]),
+        (pais_doc, tipo_doc, nro_doc),
     )
     if duplicate_document is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Documento ya registrado")
 
+
+async def _insert_usuario_base(cursor, mail: str, auth0_sub: str, payload: dict) -> None:
+    await cursor.execute(
+        """
+        INSERT INTO usuario (
+            mail, auth0_sub, pais_doc, tipo_doc, nro_doc, pais_dir, localidad, calle, nro_dir, cod_postal
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """,
+        (
+            mail,
+            auth0_sub,
+            payload["pais_doc"],
+            payload["tipo_doc"],
+            payload["nro_doc"],
+            payload["pais_dir"],
+            payload["localidad"],
+            payload["calle"],
+            payload["nro_dir"],
+            payload["cod_postal"],
+        ),
+    )
+
+    for telefono in payload.get("telefonos", []):
+        await cursor.execute(
+            "INSERT INTO telefono (mail_usuario, numero) VALUES (%s, %s)",
+            (mail, telefono),
+        )
+
+
+async def complete_registration(payload: dict, auth0_sub: str, mail: str) -> dict:
+    """
+    Registro publico. Crea siempre un usuario_general.
+    La creacion de administradores se hace por seed directo en la base.
+    El ascenso a funcionario se hace via POST /usuarios/{mail}/ascender-funcionario.
+    """
+    await _check_registration_conflicts(
+        auth0_sub, mail, payload["pais_doc"], payload["tipo_doc"], payload["nro_doc"]
+    )
+
     async with transaction() as connection:
         async with connection.cursor() as cursor:
+            await _insert_usuario_base(cursor, mail, auth0_sub, payload)
+
             await cursor.execute(
                 """
-                INSERT INTO usuario (
-                    mail, auth0_sub, pais_doc, tipo_doc, nro_doc, pais_dir, localidad, calle, nro_dir, cod_postal
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO usuario_general (mail_usuario, fecha_registro, verificado)
+                VALUES (%s, CURDATE(), %s)
                 """,
-                (
-                    mail,
-                    auth0_sub,
-                    payload["pais_doc"],
-                    payload["tipo_doc"],
-                    payload["nro_doc"],
-                    payload["pais_dir"],
-                    payload["localidad"],
-                    payload["calle"],
-                    payload["nro_dir"],
-                    payload["cod_postal"],
-                ),
+                (mail, payload.get("verificado", False)),
             )
-
-            for telefono in payload.get("telefonos", []):
-                await cursor.execute(
-                    "INSERT INTO telefono (mail_usuario, numero) VALUES (%s, %s)",
-                    (mail, telefono),
-                )
-
-            if requested_role == "administrador":
-                if payload.get("id_sede") is None:
-                    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="id_sede es requerido para administrador")
-                await cursor.execute(
-                    """
-                    INSERT INTO administrador (mail_usuario, fecha_asignacion, id_sede)
-                    VALUES (%s, CURDATE(), %s)
-                    """,
-                    (mail, payload["id_sede"]),
-                )
-            elif requested_role == "funcionario":
-                if not payload.get("nro_legajo"):
-                    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="nro_legajo es requerido para funcionario")
-                await cursor.execute(
-                    """
-                    INSERT INTO funcionario (mail_usuario, nro_legajo)
-                    VALUES (%s, %s)
-                    """,
-                    (mail, payload["nro_legajo"]),
-                )
-            else:
-                await cursor.execute(
-                    """
-                    INSERT INTO usuario_general (mail_usuario, fecha_registro, verificado)
-                    VALUES (%s, CURDATE(), %s)
-                    """,
-                    (mail, payload.get("verificado", False)),
-                )
 
     created = await get_user_profile_by_auth0_sub(auth0_sub)
     return created or {}
+
+
+async def promote_to_funcionario(mail: str, nro_legajo: str) -> dict:
+    """
+    Asciende a un usuario_general existente a funcionario.
+    Solo accesible para administradores (verificar con require_admin en el router).
+
+    El usuario debe haberse registrado previamente (existe en `usuario` y
+    `usuario_general` con su auth0_sub ya asignado). Se elimina su fila de
+    usuario_general y se crea la correspondiente en funcionario.
+    """
+    existing = await fetch_one(
+        """
+        SELECT u.mail, ug.mail_usuario AS es_usuario_general,
+               a.mail_usuario AS es_admin, f.mail_usuario AS es_funcionario
+        FROM usuario u
+        LEFT JOIN usuario_general ug ON ug.mail_usuario = u.mail
+        LEFT JOIN administrador a ON a.mail_usuario = u.mail
+        LEFT JOIN funcionario f ON f.mail_usuario = u.mail
+        WHERE u.mail = %s
+        """,
+        (mail,),
+    )
+
+    if existing is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
+    if existing["es_funcionario"] is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El usuario ya es funcionario")
+
+    if existing["es_admin"] is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El usuario ya es administrador")
+
+    if existing["es_usuario_general"] is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El usuario debe completar su registro antes de poder ser ascendido",
+        )
+
+    duplicate_legajo = await fetch_one(
+        "SELECT mail_usuario FROM funcionario WHERE nro_legajo = %s", (nro_legajo,)
+    )
+    if duplicate_legajo is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Numero de legajo ya asignado")
+
+    async with transaction() as connection:
+        async with connection.cursor() as cursor:
+            await cursor.execute("DELETE FROM usuario_general WHERE mail_usuario = %s", (mail,))
+            await cursor.execute(
+                "INSERT INTO funcionario (mail_usuario, nro_legajo) VALUES (%s, %s)",
+                (mail, nro_legajo),
+            )
+
+    updated = await get_user_profile(mail)
+    return updated or {}
 
 
 async def update_user(mail: str, payload: dict) -> dict:
@@ -172,8 +217,12 @@ async def update_user(mail: str, payload: dict) -> dict:
                 )
 
             if payload.get("telefonos") is not None:
+                telefonos = payload.get("telefonos", [])
+                if len(telefonos) != len(set(telefonos)):
+                    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Telefonos duplicados")
+
                 await cursor.execute("DELETE FROM telefono WHERE mail_usuario = %s", (mail,))
-                for telefono in payload.get("telefonos", []):
+                for telefono in telefonos:
                     await cursor.execute(
                         "INSERT INTO telefono (mail_usuario, numero) VALUES (%s, %s)",
                         (mail, telefono),

@@ -32,9 +32,14 @@ class CompleteRegistrationRequest(BaseModel):
     calle: str
     nro_dir: str
     cod_postal: str
-    tipo_usuario: UserRole = "usuario_general"
     telefonos: list[str] = Field(default_factory=list)
     verificado: bool = False
+
+
+class PromoteFuncionarioRequest(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    nro_legajo: str
 
 
 class UserUpdate(BaseModel):

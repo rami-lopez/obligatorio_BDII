@@ -225,8 +225,8 @@ CREATE TABLE venta (
     mail_usuario        VARCHAR(255)    NOT NULL,
 
     CONSTRAINT pk_venta                     PRIMARY KEY (id_venta),
-    CONSTRAINT fk_venta_usuario_general     FOREIGN KEY (mail_usuario)
-        REFERENCES usuario_general (mail_usuario),
+    CONSTRAINT fk_venta_usuario             FOREIGN KEY (mail_usuario)
+        REFERENCES usuario (mail),
     CONSTRAINT ck_venta_estado              CHECK (estado IN ('pendiente', 'confirmada', 'anulada')),
     CONSTRAINT ck_venta_monto               CHECK (monto_total >= 0),
     CONSTRAINT ck_venta_tasa                CHECK (tasa_comision >= 0)
