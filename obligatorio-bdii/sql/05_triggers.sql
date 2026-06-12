@@ -22,7 +22,7 @@ BEGIN
 
     SELECT COUNT(*) INTO v_activos FROM token_qr
     WHERE id_entrada = NEW.id_entrada AND activo = 1;
-    IF v_activos >= 1 THEN
+    IF NEW.activo = 1 AND v_activos >= 1 THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Ya existe un token activo para esta entrada';
     END IF;
