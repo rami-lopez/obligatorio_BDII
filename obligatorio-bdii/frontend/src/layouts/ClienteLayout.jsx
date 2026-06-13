@@ -1,12 +1,14 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
+import { Box } from '@mui/material';
+import Navbar from '../components/shared/Navbar';
 
 function ClienteLayout() {
   return (
-    <div>
-      ClienteLayout
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      <Navbar />
       <Outlet />
-    </div>
+    </Box>
   );
 }
 
