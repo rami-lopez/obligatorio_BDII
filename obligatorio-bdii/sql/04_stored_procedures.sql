@@ -6,6 +6,7 @@ DELIMITER $$
 
 CREATE PROCEDURE SP_RegistrarUsuario(
     IN p_mail VARCHAR(255),
+    IN p_auth0_sub VARCHAR(255),
     IN p_pais_doc VARCHAR(100),
     IN p_tipo_doc VARCHAR(50),
     IN p_nro_doc VARCHAR(50),
@@ -30,6 +31,15 @@ BEGIN
     IF EXISTS (
         SELECT 1
         FROM usuario
+        WHERE auth0_sub = p_auth0_sub
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT='El usuario Auth0 ya existe';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM usuario
         WHERE pais_doc = p_pais_doc
           AND tipo_doc = p_tipo_doc
           AND nro_doc = p_nro_doc
@@ -40,6 +50,7 @@ BEGIN
 
     INSERT INTO usuario(
         mail,
+        auth0_sub,
         pais_doc,
         tipo_doc,
         nro_doc,
@@ -51,6 +62,7 @@ BEGIN
     )
     VALUES(
         p_mail,
+        p_auth0_sub,
         p_pais_doc,
         p_tipo_doc,
         p_nro_doc,
