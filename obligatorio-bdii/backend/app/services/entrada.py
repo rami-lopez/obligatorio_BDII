@@ -133,3 +133,27 @@ async def obtener_qr_entrada(
         )
 
     return qr
+
+async def listar_entradas(mail_usuario: str):
+    return await fetch_all(
+        """
+        SELECT
+            e.id_entrada,
+            e.estado,
+            ev.id_evento,
+            ev.equipo_local,
+            ev.equipo_visitante,
+            ev.fecha_hora,
+            es.nombre AS estadio,
+            e.codigo_sector
+        FROM entrada e
+        JOIN evento ev
+            ON e.id_evento = ev.id_evento
+            AND e.id_estadio = ev.id_estadio
+        JOIN estadio es
+            ON e.id_estadio = es.id_estadio
+        WHERE e.mail_propietario = %s
+        ORDER BY ev.fecha_hora
+        """,
+        (mail_usuario,)
+    )

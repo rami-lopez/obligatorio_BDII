@@ -9,7 +9,8 @@ from app.schemas.entrada import (
 from app.services.entrada import (
     obtener_entrada,
     obtener_historial_entrada,
-    obtener_qr_entrada
+    obtener_qr_entrada,
+    listar_entradas
 )
 
 router = APIRouter(
@@ -17,6 +18,11 @@ router = APIRouter(
     tags=["Entradas"]
 )
 
+@router.get("/")
+async def mis_entradas(
+    current_user: dict = Depends(get_current_user),
+):
+    return await listar_entradas(current_user["mail"])
 
 @router.get("/{id_entrada}", response_model=EntradaDetalleResponse)
 async def detalle(
