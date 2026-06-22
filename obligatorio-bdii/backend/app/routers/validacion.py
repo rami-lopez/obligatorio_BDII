@@ -1,8 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.db.dependencies import get_current_user
-from app.schemas.validacion import SectorValidacionResponse, DispositivoResponse
+from app.schemas.validacion import SectorValidacionResponse, DispositivoResponse, ValidacionCreate
 from app.services.validacion import get_sectores_asignados, get_dispositivos
+from app.services.validacion import (
+    get_dispositivos,
+    get_sectores_asignados,
+    post_validar,
+)
 
 router = APIRouter(prefix="/validacion", tags=["validacion"])
 
@@ -30,3 +35,15 @@ async def get_disp_funcionario(
             detail="Dispositivos no encontrados",
         )
     return resultado
+
+@router.post("/")
+async def validar_entrada(
+    validacion: ValidacionCreate,
+    current_user: dict = Depends(get_current_user),
+):
+    return await post_validar(
+        validacion.id_entrada,
+        validacion.id_token,
+        validacion.identificador_disp,
+        current_user["mail"],
+    )
