@@ -57,7 +57,7 @@ async def comprar_entradas(
 
     costo = float(sector["costo"])
 
-    tasa_comision = 0.10
+    tasa_comision = 0.05
     monto_total = costo * cantidad * (1 + tasa_comision)
 
     id_venta = await execute(
