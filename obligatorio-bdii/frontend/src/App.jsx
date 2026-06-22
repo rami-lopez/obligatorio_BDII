@@ -1,60 +1,102 @@
 import React from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './hooks/useAuth';
+import { CircularProgress, Box } from '@mui/material';
 
-// Layouts
 import ClienteLayout from './layouts/ClienteLayout';
 import AdminLayout from './layouts/AdminLayout';
 import FuncionarioLayout from './layouts/FuncionarioLayout';
 
-// Vistas cliente
 import Catalogo from './pages/cliente/Catalogo';
 import DetalleEvento from './pages/cliente/DetalleEvento';
 import Checkout from './pages/cliente/Checkout';
 import MisEntradas from './pages/cliente/MisEntradas';
 import Transferencias from './pages/cliente/Transferencias';
-
-// Vistas admin
 import AdminEventos from './pages/admin/AdminEventos';
 import AdminEstadios from './pages/admin/AdminEstadios';
-
-// Vista funcionario
 import ValidacionQR from './pages/funcionario/ValidacionQR';
+import CompletarRegistro from './pages/CompletarRegistro';
+import Login from './pages/Login';
 
-// Auth mock — reemplazar con contexto real cuando esté el backend
-const ROL = 'cliente'; // 'cliente' | 'admin' | 'funcionario'
+function LoadingScreen() {
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <CircularProgress size={28} />
+    </Box>
+  );
+}
+
+function RutaProtegida({ children, rolesPermitidos }) {
+  const { isAuthenticated, isLoading, tokenListo, rol, loginWithRedirect } = useAuth();
+
+  if (isLoading || (isAuthenticated && !tokenListo)) return <LoadingScreen />;
+
+  if (!isAuthenticated) {
+    loginWithRedirect();
+    return null;
+  }
+
+  if (rol === 'sin_registro') return <Navigate to="/completar-registro" replace />;
+
+  if (rolesPermitidos && !rolesPermitidos.includes(rol)) {
+    if (rol === 'administrador') return <Navigate to="/admin/eventos" replace />;
+    if (rol === 'funcionario')   return <Navigate to="/funcionario" replace />;
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
+function HomeRedirect() {
+  const { rol, tokenListo } = useAuth();
+
+  if (!tokenListo) return <LoadingScreen />;
+
+  if (rol === 'administrador') return <Navigate to="/admin/eventos" replace />;
+  if (rol === 'funcionario')   return <Navigate to="/funcionario" replace />;
+
+  return <Catalogo />;
+}
 
 function App() {
-	return (
-		<Routes>
-			{ROL === 'cliente' ? (
-				<Route element={<ClienteLayout />}>
-					<Route path="/" element={<Navigate to="/catalogo" replace />} />
-					<Route path="/catalogo" element={<Catalogo />} />
-					<Route path="/eventos/:id" element={<DetalleEvento />} />
-					<Route path="/checkout" element={<Checkout />} />
-					<Route path="/mis-entradas" element={<MisEntradas />} />
-					<Route path="/transferencias" element={<Transferencias />} />
-				</Route>
-			) : null}
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/completar-registro" element={<CompletarRegistro />} />
 
-			{ROL === 'admin' ? (
-				<Route element={<AdminLayout />}>
-					<Route path="/" element={<Navigate to="/admin/eventos" replace />} />
-					<Route path="/admin/eventos" element={<AdminEventos />} />
-					<Route path="/admin/estadios" element={<AdminEstadios />} />
-				</Route>
-			) : null}
+      <Route element={
+        <RutaProtegida rolesPermitidos={['usuario_general', 'administrador', 'funcionario']}>
+          <ClienteLayout />
+        </RutaProtegida>
+      }>
+        <Route index element={<HomeRedirect />} />
+        <Route path="evento/:id" element={<DetalleEvento />} />
+        <Route path="checkout" element={<Checkout />} />
+        <Route path="mis-entradas" element={<MisEntradas />} />
+        <Route path="transferencias" element={<Transferencias />} />
+      </Route>
 
-			{ROL === 'funcionario' ? (
-				<Route element={<FuncionarioLayout />}>
-					<Route path="/" element={<Navigate to="/funcionario/validacion-qr" replace />} />
-					<Route path="/funcionario/validacion-qr" element={<ValidacionQR />} />
-				</Route>
-			) : null}
+      <Route path="/admin" element={
+        <RutaProtegida rolesPermitidos={['administrador']}>
+          <AdminLayout />
+        </RutaProtegida>
+      }>
+        <Route index element={<Navigate to="/admin/eventos" replace />} />
+        <Route path="eventos" element={<AdminEventos />} />
+        <Route path="estadios" element={<AdminEstadios />} />
+      </Route>
 
-			<Route path="*" element={<Navigate to="/" replace />} />
-		</Routes>
-	);
+      <Route path="/funcionario" element={
+        <RutaProtegida rolesPermitidos={['funcionario']}>
+          <FuncionarioLayout />
+        </RutaProtegida>
+      }>
+        <Route index element={<ValidacionQR />} />
+      </Route>
+
+      <Route path="*" element={<HomeRedirect />} />
+    </Routes>
+  );
 }
 
 export default App;

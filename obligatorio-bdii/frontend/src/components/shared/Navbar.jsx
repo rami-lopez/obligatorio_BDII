@@ -9,6 +9,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import { useAuth } from '../../hooks/useAuth';
 
 // Mock de notificaciones — reemplazar con fetch al backend
 const MOCK_NOTIFS = [
@@ -24,11 +25,17 @@ const MOCK_NOTIFS = [
 function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { perfil, user, logout, isAuthenticated, loginWithRedirect } = useAuth();
   const [search, setSearch] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
   const [notifs, setNotifs] = useState(MOCK_NOTIFS);
+  const [avatarAnchor, setAvatarAnchor] = useState(null);
 
   const unread = notifs.filter(n => !n.leida).length;
+
+  const iniciales = user?.name
+    ? user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+    : '?';
 
   const handleBellClick = (e) => {
     setAnchorEl(e.currentTarget);
@@ -36,6 +43,9 @@ function Navbar() {
   };
 
   const handleBellClose = () => setAnchorEl(null);
+
+  const handleAvatarClick = (e) => setAvatarAnchor(e.currentTarget);
+  const handleAvatarClose = () => setAvatarAnchor(null);
 
   const handleSearch = (e) => {
     if (e.key === 'Enter' && search.trim()) {
@@ -173,9 +183,53 @@ function Navbar() {
         </Popover>
 
         {/* Avatar */}
-        <Avatar sx={{ width: 32, height: 32, bgcolor: '#E6F1FB', color: '#185FA5', fontSize: 12, fontWeight: 500 }}>
-          NR
-        </Avatar>
+        <Box sx={{ position: 'relative' }}>
+          <Avatar
+            onClick={handleAvatarClick}
+            sx={{
+              width: 32, height: 32,
+              bgcolor: '#E6F1FB', color: '#185FA5',
+              fontSize: 12, fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >
+            {iniciales}
+          </Avatar>
+        </Box>
+
+        {/* User menu popover */}
+        <Popover
+          open={Boolean(avatarAnchor)}
+          anchorEl={avatarAnchor}
+          onClose={handleAvatarClose}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          PaperProps={{
+            elevation: 0,
+            sx: {
+              mt: 1, width: 220,
+              border: '0.5px solid', borderColor: 'divider',
+              borderRadius: 2, overflow: 'hidden',
+            },
+          }}
+        >
+          <Box sx={{ px: 2, py: 1.5, borderBottom: '0.5px solid', borderColor: 'divider' }}>
+            <Typography fontSize={13} fontWeight={500} noWrap>{user?.name || 'Usuario'}</Typography>
+            <Typography fontSize={12} color="text.secondary" noWrap>{user?.email}</Typography>
+          </Box>
+          <Box sx={{ py: 0.5 }}>
+            <Box
+              onClick={() => { handleAvatarClose(); logout(); }}
+              sx={{
+                px: 2, py: 1, fontSize: 13, cursor: 'pointer',
+                color: 'error.main',
+                '&:hover': { bgcolor: 'action.hover' },
+              }}
+            >
+              Cerrar sesión
+            </Box>
+          </Box>
+        </Popover>
 
       </Toolbar>
     </AppBar>

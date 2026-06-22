@@ -3,19 +3,28 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Stack, Button, Divider,
   TextField, MenuItem, Stepper, Step, StepLabel,
-  Paper, Chip,
+  Paper, Chip, Alert,
 } from '@mui/material';
-import PlaceIcon from '@mui/icons-material/Place';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useAuth } from '../../hooks/useAuth';
+import { comprar } from '../../api/compras';
 
-// Tasa de comisión — reemplazar con fetch a /api/config/tasa
-const TASA_COMISION = 0.05;
+const TASA_COMISION = 0.10;
 
 const PAISES = ['Uruguay', 'Argentina', 'Brasil', 'México', 'España', 'Francia', 'Alemania', 'Otro'];
 const TIPOS_DOC = ['Cédula de identidad', 'Pasaporte', 'DNI'];
+
+const SECTOR_NOMBRES = {
+  norte: 'Tribuna Norte',
+  sur: 'Tribuna Sur',
+  este: 'Lateral Este',
+  oeste: 'Lateral Oeste',
+  vip_n: 'VIP Norte',
+  vip_s: 'VIP Sur',
+};
 
 function SectionLabel({ children }) {
   return (
@@ -28,15 +37,7 @@ function SectionLabel({ children }) {
   );
 }
 
-function ResumenCard({ evento, sector, cantidad, tasa }) {
-  const subtotal = sector.precio * cantidad;
-  const comision = +(subtotal * tasa).toFixed(2);
-  const total = +(subtotal + comision).toFixed(2);
-
-  return { subtotal, comision, total };
-}
-
-function EstadoExito({ evento, sector, cantidad, onVerEntradas, onVolver }) {
+function EstadoExito({ evento, cantidad, onVerEntradas, onVolver }) {
   return (
     <Box sx={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -52,7 +53,7 @@ function EstadoExito({ evento, sector, cantidad, onVerEntradas, onVolver }) {
       <Typography fontSize={14} color="text.secondary" maxWidth={320}>
         {cantidad === 1 ? 'Tu entrada' : `Tus ${cantidad} entradas`} para{' '}
         <strong>
-          {evento.visitante ? `${evento.local} vs. ${evento.visitante}` : evento.local}
+          {evento.equipo_visitante ? `${evento.equipo_local} vs. ${evento.equipo_visitante}` : evento.equipo_local}
         </strong>{' '}
         {cantidad === 1 ? 'fue emitida.' : 'fueron emitidas.'} Podés verlas en "Mis entradas".
       </Typography>
@@ -79,26 +80,32 @@ function EstadoExito({ evento, sector, cantidad, onVerEntradas, onVolver }) {
 function Checkout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, perfil } = useAuth();
   const { evento, sector, cantidad } = location.state || {};
 
   const [confirmado, setConfirmado] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [tasa] = useState(TASA_COMISION);
 
-  // Datos del titular — pre-llenado mock, conectar con contexto de usuario
-  const [titular, setTitular] = useState({
-    nombre: 'Nicolás',
-    apellido: 'Rodríguez',
-    email: 'nicolas@email.com',
-  });
+  const [titular, setTitular] = useState({ nombre: '', apellido: '', email: '' });
 
-  // Documento
+  useEffect(() => {
+    if (user) {
+      setTitular({
+        nombre: user.given_name || user.nickname || '',
+        apellido: user.family_name || '',
+        email: user.email || perfil?.mail || '',
+      });
+    }
+  }, [user, perfil]);
+
   const [doc, setDoc] = useState({
     pais: 'Uruguay',
     tipo: 'Cédula de identidad',
     numero: '',
   });
 
-  // Pago simulado
   const [pago, setPago] = useState({
     numero: '',
     vencimiento: '',
@@ -113,7 +120,7 @@ function Checkout() {
 
   if (!evento || !sector) return null;
 
-  const subtotal = sector.precio * cantidad;
+  const subtotal = sector.costo * cantidad;
   const comision = +(subtotal * tasa).toFixed(2);
   const total = +(subtotal + comision).toFixed(2);
   const tasaPct = Math.round(tasa * 100);
@@ -131,17 +138,40 @@ function Checkout() {
     return Object.keys(e).length === 0;
   };
 
-  const handleConfirmar = () => {
+  const handleConfirmar = async () => {
     if (!validar()) return;
-    // Reemplazar con: fetch('/api/compras', { method: 'POST', body: JSON.stringify({...}) })
-    setConfirmado(true);
+    setLoading(true);
+    setErrorMsg('');
+    try {
+      await comprar({
+        id_evento: evento.id_evento,
+        id_estadio: evento.id_estadio,
+        codigo_sector: sector.codigo,
+        cantidad,
+      });
+      setConfirmado(true);
+    } catch (err) {
+      const detail = err?.response?.data?.detail || 'Error al procesar la compra';
+      setErrorMsg(detail);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const titulo = evento.equipo_visitante
+    ? `${evento.equipo_local} vs. ${evento.equipo_visitante}`
+    : evento.equipo_local;
+  const fechaStr = evento.fecha_hora
+    ? new Date(evento.fecha_hora).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '';
+  const horaStr = evento.fecha_hora
+    ? new Date(evento.fecha_hora).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+    : '';
 
   if (confirmado) {
     return (
       <EstadoExito
         evento={evento}
-        sector={sector}
         cantidad={cantidad}
         onVerEntradas={() => navigate('/mis-entradas')}
         onVolver={() => navigate('/')}
@@ -180,40 +210,20 @@ function Checkout() {
               <Box sx={{ px: 2, pt: 2 }}>Detalle del pedido</Box>
             </SectionLabel>
 
-            {/* Hero del evento */}
-            <Box sx={{ mx: 2, mb: 1.5, borderRadius: 1.5, overflow: 'hidden', height: 110 }}>
-              <Box
-                component="img"
-                src={evento.foto}
-                alt={evento.estadio}
-                sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-              />
-            </Box>
-
             <Box sx={{ px: 2, pb: 2 }}>
-              <Typography fontWeight={500} fontSize={15} mb={0.5}>
-                {evento.visitante ? `${evento.local} vs. ${evento.visitante}` : evento.local}
-              </Typography>
+              <Typography fontWeight={500} fontSize={15} mb={0.5}>{titulo}</Typography>
               <Stack direction="row" gap={1.5} flexWrap="wrap" mb={1.5}>
                 <Typography fontSize={12} color="text.secondary" display="flex" alignItems="center" gap={0.4}>
-                  <PlaceIcon sx={{ fontSize: 14 }} />{evento.estadio}, {evento.ciudad}
-                </Typography>
-                <Typography fontSize={12} color="text.secondary" display="flex" alignItems="center" gap={0.4}>
-                  <CalendarTodayIcon sx={{ fontSize: 13 }} />{evento.fecha} · {evento.hora} hs
+                  <CalendarTodayIcon sx={{ fontSize: 13 }} />{fechaStr}{horaStr ? ` · ${horaStr}` : ''} hs
                 </Typography>
               </Stack>
               <Divider sx={{ mb: 1.5 }} />
               <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <Typography fontSize={13} color="text.secondary">
-                  {sector.nombre}{' '}
-                  <Chip
-                    label={sector.tipo}
-                    size="small"
-                    sx={{ bgcolor: '#E6F1FB', color: '#185FA5', fontSize: 11, height: 20, borderRadius: 1, ml: 0.5 }}
-                  />
+                  {SECTOR_NOMBRES[sector.codigo] || sector.codigo}
                 </Typography>
                 <Typography fontWeight={500} fontSize={13}>
-                  USD {sector.precio} × {cantidad}
+                  USD {sector.costo} × {cantidad}
                 </Typography>
               </Stack>
             </Box>
@@ -365,7 +375,7 @@ function Checkout() {
             <Stack gap={1.25} mb={1.5}>
               <Stack direction="row" justifyContent="space-between">
                 <Typography fontSize={13} color="text.secondary">
-                  {cantidad} × {sector.nombre}
+                  {cantidad} × {SECTOR_NOMBRES[sector.codigo] || sector.codigo}
                 </Typography>
                 <Typography fontSize={13}>USD {subtotal}</Typography>
               </Stack>
@@ -392,14 +402,19 @@ function Checkout() {
               Tasa vigente al momento de la compra: {tasaPct}%
             </Typography>
 
+            {errorMsg && (
+              <Alert severity="error" sx={{ mb: 1.5, fontSize: 13 }}>{errorMsg}</Alert>
+            )}
+
             <Button
               variant="contained"
               fullWidth
               size="large"
               onClick={handleConfirmar}
+              disabled={loading}
               sx={{ py: 1.25, fontSize: 14, mb: 1 }}
             >
-              Confirmar compra
+              {loading ? 'Procesando...' : 'Confirmar compra'}
             </Button>
 
             <Typography fontSize={11} color="text.disabled" textAlign="center" lineHeight={1.5}>
