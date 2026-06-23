@@ -1,5 +1,6 @@
 from fastapi import HTTPException, status
 
+from app.services.qr import generar_hash_qr
 from app.db.database import fetch_one, fetch_all
 
 async def obtener_entrada(
@@ -91,11 +92,7 @@ async def obtener_qr_entrada(
     mail_usuario: str,
 ):
     entrada = await fetch_one(
-        """
-        SELECT mail_propietario
-        FROM entrada
-        WHERE id_entrada = %s
-        """,
+        "SELECT mail_propietario, estado FROM entrada WHERE id_entrada = %s",
         (id_entrada,)
     )
 
@@ -111,28 +108,18 @@ async def obtener_qr_entrada(
             detail="No tiene permisos para consultar esta entrada"
         )
 
-    qr = await fetch_one(
-        """
-        SELECT
-            id_token,
-            codigo_hash,
-            generado_en,
-            expira_en,
-            activo
-        FROM token_qr
-        WHERE id_entrada = %s
-          AND activo = 1
-        """,
-        (id_entrada,)
-    )
-
-    if qr is None:
+    if entrada["estado"] == "consumida":
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No existe un QR activo para esta entrada"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La entrada ya fue consumida"
         )
 
-    return qr
+    hash_actual = generar_hash_qr(id_entrada)
+
+    return {
+        "hash_actual": hash_actual,
+        "id_entrada": id_entrada,
+    }
 
 async def listar_entradas(mail_usuario: str):
     return await fetch_all(
