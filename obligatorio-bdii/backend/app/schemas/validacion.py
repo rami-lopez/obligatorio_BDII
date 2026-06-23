@@ -16,3 +16,8 @@ class DispositivoResponse (BaseModel):
 
     class Config:
         from_attributes = True
+
+class ValidacionCreate(BaseModel):
+    id_entrada: int
+    id_token: int
+    identificador_disp: str
