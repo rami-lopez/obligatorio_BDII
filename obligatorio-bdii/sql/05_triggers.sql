@@ -2,33 +2,6 @@ USE ticketing_mundial;
 DELIMITER $$
 
 -- ============================================================
--- token_qr — BEFORE INSERT
--- Consolida: no QR para entrada consumida + solo un activo por entrada
--- Nota: el UPDATE del token anterior debe hacerlo la app antes de insertar
--- ============================================================
-DROP TRIGGER IF EXISTS trg_token_qr_bi$$
-CREATE TRIGGER trg_token_qr_bi
-BEFORE INSERT ON token_qr
-FOR EACH ROW
-BEGIN
-    DECLARE v_estado VARCHAR(20);
-    DECLARE v_activos INT;
-
-    SELECT estado INTO v_estado FROM entrada WHERE id_entrada = NEW.id_entrada;
-    IF v_estado = 'consumida' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'No se puede generar QR para entrada consumida';
-    END IF;
-
-    SELECT COUNT(*) INTO v_activos FROM token_qr
-    WHERE id_entrada = NEW.id_entrada AND activo = 1;
-    IF NEW.activo = 1 AND v_activos >= 1 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Ya existe un token activo para esta entrada';
-    END IF;
-END$$
-
--- ============================================================
 -- entrada — BEFORE INSERT
 -- Consolida: sector habilitado + consistencia estadio +
 --            capacidad maxima + max 5 por venta
@@ -182,8 +155,6 @@ BEGIN
     DECLARE v_sector    VARCHAR(10);
     DECLARE v_id_evento INT;
     DECLARE v_estado    VARCHAR(20);
-    DECLARE v_activo    TINYINT;
-    DECLARE v_expira_en DATETIME;
 
     -- Funcionario asignado al sector del evento
     SELECT e.codigo_sector, e.id_evento INTO v_sector, v_id_evento
@@ -203,18 +174,6 @@ BEGIN
     IF v_estado = 'consumida' THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'La entrada ya fue consumida';
-    END IF;
-
-    -- Token activo y vigente
-    SELECT activo, expira_en INTO v_activo, v_expira_en
-    FROM token_qr WHERE id_token = NEW.id_token;
-    IF v_activo IS NULL OR v_activo = 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'El QR no existe o no esta activo';
-    END IF;
-    IF v_expira_en < NOW() THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'El codigo QR ha expirado';
     END IF;
 END$$
 
