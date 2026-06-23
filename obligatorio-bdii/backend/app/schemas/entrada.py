@@ -23,3 +23,4 @@ class HistorialTransferenciaResponse(BaseModel):
 class QRResponse(BaseModel):
     id_token: int
     codigo_hash: str
+    generado_en: datetime
