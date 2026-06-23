@@ -7,10 +7,13 @@ async def get_evento(id_evento: int) -> list | None:
         (id_evento,),
     )
 
-async def get_eventos() -> dict | None:
-    return await fetch_all(
-        "SELECT * FROM evento"
-    )
+async def get_eventos(id_sede: int | None = None) -> list:
+    query = "SELECT ev.* FROM evento ev"
+    params = []
+    if id_sede is not None:
+        query += " JOIN estadio e ON ev.id_estadio = e.id_estadio WHERE e.id_sede = %s"
+        params.append(id_sede)
+    return await fetch_all(query, tuple(params))
 
 async def get_sectores_evento(id_evento: int) -> list | None:
     return await fetch_all(

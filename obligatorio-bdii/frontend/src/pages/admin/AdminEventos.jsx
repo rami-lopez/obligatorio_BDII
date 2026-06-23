@@ -190,20 +190,29 @@ function AdminEventos() {
     return matchTab && matchQ;
   });
 
+  const cargarDatos = async () => {
+    try {
+      const [evs, ests] = await Promise.all([listarEventos(), listarEstadios()]);
+      setEventos(evs);
+      setEstadios(ests);
+    } catch {
+      setError('Error al recargar datos');
+    }
+  };
+
   const handleGuardar = async (form) => {
     try {
       if (editando) {
-        const updated = await actualizarEvento(editando.id_evento, {
+        await actualizarEvento(editando.id_evento, {
           fecha_hora: form.fecha_hora,
           equipo_local: form.equipo_local,
           equipo_visitante: form.equipo_visitante,
           id_estadio: form.id_estadio,
         });
-        setEventos(prev => prev.map(e => e.id_evento === editando.id_evento ? updated : e));
       } else {
-        const nuevo = await crearEvento(form);
-        setEventos(prev => [nuevo, ...prev]);
+        await crearEvento(form);
       }
+      await cargarDatos();
     } catch (err) {
       setError(err?.response?.data?.detail || 'Error al guardar evento');
     }

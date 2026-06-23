@@ -17,6 +17,7 @@ from app.routers.compra import router as compra_router
 from app.routers.entrada import router as entrada_router
 from app.routers.estadio import router as estadio_router, sedes_router
 from app.routers.entrada import router as entradas_router
+from app.routers.admin_funcionarios import router as admin_funcionarios_router
 
 
 @asynccontextmanager
@@ -63,6 +64,7 @@ app.include_router(sedes_router)
 app.include_router(estadio_router)
 app.include_router(entrada_router)
 app.include_router(entradas_router)
+app.include_router(admin_funcionarios_router)
 
 
 def custom_openapi() -> dict:

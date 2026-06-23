@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends
 
-from app.db.dependencies import require_admin
+from app.db.dependencies import get_current_user, require_admin
 
 from app.schemas.estadio import (
     EstadioCreate,
+    EstadioResponse,
     SedeResponse,
     SectorCreate,
 )
@@ -34,8 +35,9 @@ async def listar_sedes():
 
 
 @router.get("/")
-async def listar_estadios():
-    return await obtener_estadios()
+async def listar_estadios(current_user: dict = Depends(get_current_user)):
+    id_sede = current_user.get("id_sede") if current_user.get("role") == "administrador" else None
+    return await obtener_estadios(id_sede)
 
 
 @router.get("/{id_estadio}")
@@ -45,15 +47,17 @@ async def detalle_estadio(
     return await obtener_estadio(id_estadio)
 
 
-@router.post("/")
+@router.post("/", response_model=EstadioResponse, status_code=201)
 async def alta_estadio(
     estadio: EstadioCreate,
     current_user: dict = Depends(require_admin)
 ):
+    sectores_dict = [s.model_dump() for s in estadio.sectores]
     return await crear_estadio(
         estadio.nombre,
         estadio.ciudad,
-        estadio.id_sede
+        estadio.id_sede,
+        sectores_dict
     )
 
 

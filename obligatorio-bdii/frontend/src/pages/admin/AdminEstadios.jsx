@@ -1,29 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Typography, Button, Paper, MenuItem,
+  Box, Typography, Button, Paper, MenuItem, Checkbox,
   Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, TextField,
-  Collapse, IconButton, Alert,
+  Collapse, IconButton, Alert, Stack,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckIcon from '@mui/icons-material/Check';
 import { listarEstadios, listarSedes, crearEstadio } from '../../api/estadios';
 
+const SECTORES_BASE = [
+  { codigo: 'A1' },
+  { codigo: 'B1' },
+  { codigo: 'C1' },
+  { codigo: 'D1' },
+];
+
 const FORM_VACIO = { nombre: '', ciudad: '', id_sede: '' };
+const SECTOR_VACIO = { activo: true, capacidad: '', costo: '' };
 
 function FormEstadio({ onClose, onGuardar, sedes }) {
   const [form, setForm] = useState(FORM_VACIO);
+  const [sectores, setSectores] = useState(
+    SECTORES_BASE.map(s => ({ ...SECTOR_VACIO, codigo: s.codigo }))
+  );
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const setSector = (codigo, k, v) =>
+    setSectores(prev => prev.map(s => s.codigo === codigo ? { ...s, [k]: v } : s));
 
   const validar = () => {
     const e = {};
     if (!form.nombre.trim())  e.nombre  = 'Requerido';
     if (!form.ciudad.trim())  e.ciudad  = 'Requerido';
     if (!form.id_sede)        e.id_sede = 'Requerido';
+
+    const sectoresActivos = sectores.filter(s => s.activo);
+    for (const s of sectoresActivos) {
+      if (!s.capacidad || parseInt(s.capacidad) <= 0) {
+        e[`cap_${s.codigo}`] = 'Debe ser > 0';
+      }
+      if (s.costo === '' || parseFloat(s.costo) < 0) {
+        e[`cost_${s.codigo}`] = 'Debe ser >= 0';
+      }
+    }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -36,6 +61,13 @@ function FormEstadio({ onClose, onGuardar, sedes }) {
         nombre: form.nombre.trim(),
         ciudad: form.ciudad.trim(),
         id_sede: parseInt(form.id_sede, 10),
+        sectores: sectores
+          .filter(s => s.activo)
+          .map(s => ({
+            codigo: s.codigo,
+            capacidad_max: parseInt(s.capacidad, 10),
+            costo: parseFloat(s.costo),
+          })),
       });
       onClose();
     } catch {
@@ -78,9 +110,55 @@ function FormEstadio({ onClose, onGuardar, sedes }) {
         </TextField>
       </Box>
 
+      {/* Sectores */}
       <Box sx={{
         px: 2, py: 1.5,
         borderTop: '0.5px solid', borderColor: 'divider',
+        borderBottom: '0.5px solid', borderColor: 'divider',
+      }}>
+        <Typography fontSize={12} fontWeight={500} color="text.secondary"
+          textTransform="uppercase" letterSpacing={0.5} mb={1.5}>
+          Sectores del estadio
+        </Typography>
+
+        {sectores.map(s => {
+          const capError = errors[`cap_${s.codigo}`];
+          const costError = errors[`cost_${s.codigo}`];
+          return (
+            <Stack key={s.codigo} direction="row" alignItems="center" gap={1} mb={1}>
+              <Checkbox
+                size="small"
+                checked={s.activo}
+                onChange={() => setSector(s.codigo, 'activo', !s.activo)}
+              />
+              <Typography fontSize={13} fontWeight={500} minWidth={30}>{s.codigo}</Typography>
+              <TextField
+                size="small" type="number"
+                placeholder="Capacidad"
+                value={s.capacidad}
+                onChange={e => setSector(s.codigo, 'capacidad', e.target.value)}
+                error={!!capError} helperText={capError || ''}
+                disabled={!s.activo}
+                sx={{ width: 130, '& .MuiInputBase-input': { fontSize: 13 } }}
+                inputProps={{ min: 0 }}
+              />
+              <TextField
+                size="small" type="number"
+                placeholder="Precio USD"
+                value={s.costo}
+                onChange={e => setSector(s.codigo, 'costo', e.target.value)}
+                error={!!costError} helperText={costError || ''}
+                disabled={!s.activo}
+                sx={{ width: 130, '& .MuiInputBase-input': { fontSize: 13 } }}
+                inputProps={{ min: 0, step: 0.01 }}
+              />
+            </Stack>
+          );
+        })}
+      </Box>
+
+      <Box sx={{
+        px: 2, py: 1.5,
         display: 'flex', justifyContent: 'flex-end', gap: 1,
       }}>
         <Button variant="outlined" size="small" onClick={onClose} sx={{ fontSize: 13 }} disabled={saving}>
@@ -126,11 +204,19 @@ function AdminEstadios() {
       `${e.nombre} ${e.ciudad} ${pais}`.toLowerCase().includes(busqueda.toLowerCase());
   });
 
+  const cargarEstadios = async () => {
+    try {
+      const ests = await listarEstadios();
+      setEstadios(ests);
+    } catch {
+      setError('Error al recargar estadios');
+    }
+  };
+
   const handleGuardar = async (form) => {
     try {
-      const nuevo = await crearEstadio(form);
-      const pais = sedeMap[form.id_sede] || '';
-      setEstadios(prev => [{ ...nuevo, pais }, ...prev]);
+      await crearEstadio(form);
+      await cargarEstadios();
     } catch (err) {
       setError(err?.response?.data?.detail || 'Error al crear estadio');
       throw err;
@@ -209,7 +295,7 @@ function AdminEstadios() {
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ bgcolor: 'background.default' }}>
-                  {['Estadio', 'Ciudad', 'País'].map(h => (
+                  {['Estadio', 'Ciudad', 'País', 'Eventos'].map(h => (
                     <TableCell key={h} sx={{ fontSize: 11, fontWeight: 500, color: 'text.disabled', textTransform: 'uppercase', letterSpacing: 0.4 }}>
                       {h}
                     </TableCell>
@@ -225,11 +311,12 @@ function AdminEstadios() {
                     <TableCell sx={{ fontSize: 13, fontWeight: 500 }}>{e.nombre}</TableCell>
                     <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{e.ciudad}</TableCell>
                     <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{sedeMap[e.id_sede] || e.pais || `ID ${e.id_sede}`}</TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{e.cantidad_eventos ?? 0}</TableCell>
                   </TableRow>
                 ))}
                 {filtrados.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={3} align="center" sx={{ py: 4, color: 'text.disabled', fontSize: 13 }}>
+                    <TableCell colSpan={4} align="center" sx={{ py: 4, color: 'text.disabled', fontSize: 13 }}>
                       No se encontraron estadios
                     </TableCell>
                   </TableRow>

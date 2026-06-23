@@ -35,7 +35,8 @@ async def get_evento_by_id(
 
 @router.get("/", response_model=list[EventResponse])
 async def listar_eventos(current_user: dict = Depends(get_current_user)):
-    resultado = await get_eventos()
+    id_sede = current_user.get("id_sede") if current_user.get("role") == "administrador" else None
+    resultado = await get_eventos(id_sede)
     if resultado is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
