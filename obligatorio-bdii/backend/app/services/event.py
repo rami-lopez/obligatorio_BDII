@@ -33,6 +33,38 @@ async def get_sectores_evento(id_evento: int) -> list | None:
         (id_evento,),
     )
 
+
+async def get_sectores_evento_admin(id_evento: int) -> list | None:
+    evento = await get_evento(id_evento)
+    if evento is None:
+        return None
+
+    return await fetch_all(
+        """
+        SELECT
+            s.codigo,
+            s.capacidad_max,
+            s.costo,
+            COUNT(e.id_entrada) AS vendidas,
+            s.capacidad_max - COUNT(e.id_entrada) AS disponibles,
+            CASE WHEN es.codigo_sector IS NOT NULL THEN TRUE ELSE FALSE END AS habilitado
+        FROM ticketing_mundial.sector s
+        LEFT JOIN ticketing_mundial.evento_sector es
+            ON es.id_estadio = s.id_estadio
+            AND es.codigo_sector = s.codigo
+            AND es.id_evento = %s
+        LEFT JOIN ticketing_mundial.entrada e
+            ON e.id_estadio = s.id_estadio
+            AND e.codigo_sector = s.codigo
+            AND e.id_evento = %s
+            AND e.estado != 'anulada'
+        WHERE s.id_estadio = %s
+        GROUP BY s.codigo, s.capacidad_max, s.costo, es.codigo_sector
+        ORDER BY s.codigo;
+        """,
+        (id_evento, id_evento, evento["id_estadio"]),
+    )
+
 async def update_evento(id_evento: int, datos: EventUpdate) -> dict | None:
     # verificamos que exista el evento
     existente = await get_evento(id_evento)
@@ -177,5 +209,32 @@ async def habilitar_sector(id_evento: int, codigo_sector: str) -> dict | None:
         (id_evento, evento["id_estadio"], codigo_sector),
     )
 
-    return await get_sectores_evento(id_evento)
+    return await get_sectores_evento_admin(id_evento)
+
+
+async def deshabilitar_sector(id_evento: int, codigo_sector: str) -> list | str | None:
+    evento = await get_evento(id_evento)
+    if evento is None:
+        return None
+
+    existe = await fetch_one(
+        "SELECT 1 FROM evento_sector WHERE id_evento = %s AND codigo_sector = %s",
+        (id_evento, codigo_sector),
+    )
+    if existe is None:
+        return "no_habilitado"
+
+    entradas = await fetch_one(
+        "SELECT 1 FROM entrada WHERE id_evento = %s AND codigo_sector = %s AND estado != 'anulada'",
+        (id_evento, codigo_sector),
+    )
+    if entradas is not None:
+        return "tiene_entradas"
+
+    await execute(
+        "DELETE FROM evento_sector WHERE id_evento = %s AND codigo_sector = %s",
+        (id_evento, codigo_sector),
+    )
+
+    return await get_sectores_evento_admin(id_evento)
     

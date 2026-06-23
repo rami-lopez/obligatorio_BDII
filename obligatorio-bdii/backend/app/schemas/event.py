@@ -37,5 +37,16 @@ class SectorEventoResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class SectorAdminResponse(BaseModel):
+    codigo: str
+    capacidad_max: int
+    costo: float
+    vendidas: int
+    disponibles: int
+    habilitado: bool
+
+    class Config:
+        from_attributes = True
+
 class HabilitarSectorRequest(BaseModel):
     codigo_sector: str

@@ -14,6 +14,7 @@ import MisEntradas from './pages/cliente/MisEntradas';
 import Transferencias from './pages/cliente/Transferencias';
 import AdminEventos from './pages/admin/AdminEventos';
 import AdminEstadios from './pages/admin/AdminEstadios';
+import AdminSectoresEvento from './pages/admin/AdminSectoresEvento';
 import ValidacionQR from './pages/funcionario/ValidacionQR';
 import CompletarRegistro from './pages/CompletarRegistro';
 import Login from './pages/Login';
@@ -83,6 +84,7 @@ function App() {
       }>
         <Route index element={<Navigate to="/admin/eventos" replace />} />
         <Route path="eventos" element={<AdminEventos />} />
+        <Route path="eventos/:id/sectores" element={<AdminSectoresEvento />} />
         <Route path="estadios" element={<AdminEstadios />} />
       </Route>
 

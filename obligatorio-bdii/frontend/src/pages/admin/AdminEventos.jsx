@@ -7,8 +7,10 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
+import TuneIcon from '@mui/icons-material/Tune';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckIcon from '@mui/icons-material/Check';
+import { useNavigate } from 'react-router-dom';
 import { listarEventos, crearEvento, actualizarEvento } from '../../api/eventos';
 import { listarEstadios } from '../../api/estadios';
 
@@ -149,6 +151,7 @@ function FormEvento({ initial, onClose, onGuardar, estadios }) {
 }
 
 function AdminEventos() {
+  const navigate = useNavigate();
   const [eventos, setEventos] = useState([]);
   const [estadios, setEstadios] = useState([]);
   const [formVisible, setFormVisible] = useState(false);
@@ -157,6 +160,8 @@ function AdminEventos() {
   const [busqueda, setBusqueda] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const esPasado = (fecha_hora) => new Date(fecha_hora) < new Date();
 
   const estadioMap = useMemo(() =>
     Object.fromEntries(estadios.map(s => [s.id_estadio, s.nombre])),
@@ -342,8 +347,17 @@ function AdminEventos() {
                     <TableCell align="right">
                       <IconButton
                         size="small"
+                        disabled={esPasado(e.fecha_hora)}
+                        onClick={() => navigate(`/admin/eventos/${e.id_evento}/sectores`)}
+                        sx={{ color: esPasado(e.fecha_hora) ? 'action.disabled' : 'text.secondary', '&:hover': { color: 'primary.main' }, mr: 0.5 }}
+                      >
+                        <TuneIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        disabled={esPasado(e.fecha_hora)}
                         onClick={() => handleEditar(e)}
-                        sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+                        sx={{ color: esPasado(e.fecha_hora) ? 'action.disabled' : 'text.secondary', '&:hover': { color: 'text.primary' } }}
                       >
                         <EditIcon sx={{ fontSize: 16 }} />
                       </IconButton>

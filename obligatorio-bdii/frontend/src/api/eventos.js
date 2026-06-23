@@ -14,3 +14,12 @@ export const crearEvento = (data) =>
 
 export const actualizarEvento = (id, data) =>
   client.patch(`/eventos/${id}`, data).then(r => r.data);
+
+export const getSectoresAdmin = (id) =>
+  client.get(`/eventos/${id}/sectores/admin`).then(r => r.data);
+
+export const habilitarSector = (idEvento, codigoSector) =>
+  client.post(`/eventos/${idEvento}/sectores`, { codigo_sector: codigoSector }).then(r => r.data);
+
+export const deshabilitarSector = (idEvento, codigoSector) =>
+  client.delete(`/eventos/${idEvento}/sectores/${codigoSector}`).then(r => r.data);
