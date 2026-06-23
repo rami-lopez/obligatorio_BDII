@@ -208,7 +208,7 @@ INSERT INTO transferencia (fecha_solicitud, fecha_aceptacion, estado, nro_orden,
 -- ============================================================
 -- TOKEN QR
 -- ============================================================
-INSERT INTO token_qr (codigo_hash, generado_en, expira_en, activo, id_entrada) VALUES
+INSERT INTO token_qr (codigo_hash, generado_en, id_entrada) VALUES
 ('hash_abc123def456', '2026-06-11 19:50:00',  1),
 ('hash_bcd234efg567', '2026-06-11 19:50:00',  2),
 ('hash_cde345fgh678', '2026-06-11 19:50:00',  3),
