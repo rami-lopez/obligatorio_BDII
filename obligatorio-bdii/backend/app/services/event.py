@@ -126,7 +126,7 @@ async def crear_evento(evento: EventCreate, mail_admin: str) -> dict | None:
         async with connection.cursor() as cursor:
             await cursor.execute(
                 """
-                INSERT INTO ticketing_mundial.evento (
+                INSERT INTO evento (
                     fecha_hora, equipo_local, equipo_visitante, id_estadio, mail_admin
                 ) VALUES (%s, %s, %s, %s, %s)
                 """,
@@ -135,8 +135,15 @@ async def crear_evento(evento: EventCreate, mail_admin: str) -> dict | None:
             await cursor.execute("SELECT LAST_INSERT_ID()")
             row = await cursor.fetchone()
             id_nuevo = row[0]
-    creado = await get_evento(id_nuevo)
-    return creado or {}
+    
+    return {
+        "id_evento": id_nuevo,
+        "fecha_hora": evento.fecha_hora,
+        "equipo_local": evento.equipo_local,
+        "equipo_visitante": evento.equipo_visitante,
+        "id_estadio": evento.id_estadio,
+        "mail_admin": mail_admin,
+    }
 
         
 async def habilitar_sector(id_evento: int, codigo_sector: str) -> dict | None:

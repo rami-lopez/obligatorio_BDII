@@ -3,6 +3,9 @@ import client from './client';
 export const listarEstadios = () =>
   client.get('/estadios/').then(r => r.data);
 
+export const listarSedes = () =>
+  client.get('/sedes/').then(r => r.data);
+
 export const getEstadio = (id) =>
   client.get(`/estadios/${id}`).then(r => r.data);
 

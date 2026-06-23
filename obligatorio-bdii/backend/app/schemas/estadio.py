@@ -2,7 +2,6 @@ from pydantic import BaseModel
 
 class EstadioCreate(BaseModel):
     nombre: str
-    pais: str
     ciudad: str
     id_sede: int
 
@@ -10,9 +9,13 @@ class EstadioCreate(BaseModel):
 class EstadioResponse(BaseModel):
     id_estadio: int
     nombre: str
-    pais: str
     ciudad: str
     id_sede: int
+
+
+class SedeResponse(BaseModel):
+    id_sede: int
+    pais: str
 
 
 class SectorCreate(BaseModel):

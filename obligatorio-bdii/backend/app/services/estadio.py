@@ -2,18 +2,30 @@ from fastapi import HTTPException, status
 
 from app.db.database import fetch_one, fetch_all, execute
 
+async def obtener_sedes():
+    return await fetch_all(
+        """
+        SELECT
+            id_sede,
+            pais
+        FROM sede
+        ORDER BY pais
+        """
+    )
+
 async def obtener_estadios():
 
     return await fetch_all(
         """
         SELECT
-            id_estadio,
-            nombre,
-            pais,
-            ciudad,
-            id_sede
-        FROM estadio
-        ORDER BY nombre
+            e.id_estadio,
+            e.nombre,
+            e.ciudad,
+            e.id_sede,
+            s.pais AS pais
+        FROM estadio e
+        JOIN sede s ON e.id_sede = s.id_sede
+        ORDER BY e.nombre
         """
     )
 
@@ -22,13 +34,14 @@ async def obtener_estadio(id_estadio: int):
     estadio = await fetch_one(
         """
         SELECT
-            id_estadio,
-            nombre,
-            pais,
-            ciudad,
-            id_sede
-        FROM estadio
-        WHERE id_estadio = %s
+            e.id_estadio,
+            e.nombre,
+            e.ciudad,
+            e.id_sede,
+            s.pais AS pais
+        FROM estadio e
+        JOIN sede s ON e.id_sede = s.id_sede
+        WHERE e.id_estadio = %s
         """,
         (id_estadio,)
     )
@@ -43,7 +56,6 @@ async def obtener_estadio(id_estadio: int):
 
 async def crear_estadio(
     nombre: str,
-    pais: str,
     ciudad: str,
     id_sede: int,
 ):
@@ -52,12 +64,10 @@ async def crear_estadio(
         """
         INSERT INTO estadio(
             nombre,
-            pais,
             ciudad,
             id_sede
         )
         VALUES(
-            %s,
             %s,
             %s,
             %s
@@ -65,7 +75,6 @@ async def crear_estadio(
         """,
         (
             nombre,
-            pais,
             ciudad,
             id_sede
         )

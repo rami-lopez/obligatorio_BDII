@@ -3,12 +3,10 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ============================================================
 -- SEDE
 -- ============================================================
-INSERT INTO sede (nombre, pais) VALUES
-('Sede Ciudad de Mexico',       'Mexico'),
-('Sede Guadalajara',             'Mexico'),
-('Sede Monterrey',               'Mexico'),
-('Sede Nueva York / Nueva Jersey','Estados Unidos'),
-('Sede Vancouver',               'Canada');
+INSERT INTO sede (pais) VALUES
+('Mexico'),
+('Estados Unidos'),
+('Canada');
 
 -- ============================================================
 -- USUARIO
@@ -77,12 +75,12 @@ INSERT INTO telefono (mail_usuario, numero) VALUES
 -- ============================================================
 -- ESTADIO
 -- ============================================================
-INSERT INTO estadio (nombre, pais, ciudad, id_sede) VALUES
-('Estadio Azteca',            'Mexico',           'Ciudad de Mexico',     1),
-('Estadio Akron',             'Mexico',           'Zapopan',              2),
-('Estadio BBVA',              'Mexico',           'Monterrey',            3),
-('MetLife Stadium',           'Estados Unidos',    'East Rutherford',      4),
-('BC Place',                  'Canada',           'Vancouver',            5);
+INSERT INTO estadio (nombre, ciudad, id_sede) VALUES
+('Estadio Azteca',            'Ciudad de Mexico', 1),
+('Estadio Akron',             'Zapopan',          1),
+('Estadio BBVA',              'Monterrey',        1),
+('MetLife Stadium',           'East Rutherford',  2),
+('BC Place',                  'Vancouver',        3);
 
 -- ============================================================
 -- SECTOR

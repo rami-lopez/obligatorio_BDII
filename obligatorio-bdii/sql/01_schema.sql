@@ -80,7 +80,6 @@ CREATE TABLE usuario_general (
 
 CREATE TABLE sede (
     id_sede             INT             NOT NULL AUTO_INCREMENT,
-    nombre              VARCHAR(150)    NOT NULL,
     pais                VARCHAR(100)    NOT NULL,
 
     CONSTRAINT pk_sede PRIMARY KEY (id_sede)
@@ -97,7 +96,6 @@ ALTER TABLE administrador
 CREATE TABLE estadio (
     id_estadio          INT             NOT NULL AUTO_INCREMENT,
     nombre              VARCHAR(150)    NOT NULL,
-    pais                VARCHAR(100)    NOT NULL,
     ciudad              VARCHAR(100)    NOT NULL,
     id_sede             INT             NOT NULL,
 

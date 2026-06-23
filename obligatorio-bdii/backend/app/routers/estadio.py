@@ -4,10 +4,12 @@ from app.db.dependencies import require_admin
 
 from app.schemas.estadio import (
     EstadioCreate,
+    SedeResponse,
     SectorCreate,
 )
 
 from app.services.estadio import (
+    obtener_sedes,
     obtener_estadios,
     obtener_estadio,
     crear_estadio,
@@ -20,15 +22,28 @@ router = APIRouter(
     tags=["Estadios y Sectores"]
 )
 
+sedes_router = APIRouter(
+    prefix="/sedes",
+    tags=["Sedes"]
+)
+
+
+@sedes_router.get("/", response_model=list[SedeResponse])
+async def listar_sedes():
+    return await obtener_sedes()
+
+
 @router.get("/")
 async def listar_estadios():
     return await obtener_estadios()
+
 
 @router.get("/{id_estadio}")
 async def detalle_estadio(
     id_estadio: int
 ):
     return await obtener_estadio(id_estadio)
+
 
 @router.post("/")
 async def alta_estadio(
@@ -37,16 +52,17 @@ async def alta_estadio(
 ):
     return await crear_estadio(
         estadio.nombre,
-        estadio.pais,
         estadio.ciudad,
         estadio.id_sede
     )
+
 
 @router.get("/{id_estadio}/sectores")
 async def sectores(
     id_estadio: int
 ):
     return await obtener_sectores(id_estadio)
+
 
 @router.post("/{id_estadio}/sectores")
 async def alta_sector(
