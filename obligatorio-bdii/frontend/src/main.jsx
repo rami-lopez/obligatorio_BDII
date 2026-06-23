@@ -17,6 +17,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <Auth0Provider
       domain={AUTH0_DOMAIN}
       clientId={AUTH0_CLIENT_ID}
+      cacheLocation="localstorage"
       authorizationParams={{
         redirect_uri: window.location.origin,
         audience: AUTH0_AUDIENCE,

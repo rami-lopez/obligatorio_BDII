@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Box, Typography, Chip, Grid, Card, CardMedia,
-  CardContent, CardActions, Button, Stack,
+  Box, Typography, Chip, Grid, Card, CardContent,
+  CardActions, Button, Stack, Alert,
 } from '@mui/material';
 import PlaceIcon from '@mui/icons-material/Place';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import { listarEventos } from '../../api/eventos';
+import { useAuth } from '../../hooks/useAuth';
 
 const FASES = ['Todos', 'Fase de grupos', 'Octavos', 'Cuartos', 'Semifinal', 'Final'];
 
@@ -15,9 +17,6 @@ function EventoCardChico({ evento, onClick }) {
   const fechaStr = evento.fecha_hora
     ? new Date(evento.fecha_hora).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
     : '';
-  const titulo = evento.equipo_visitante
-    ? `${evento.equipo_local} vs. ${evento.equipo_visitante}`
-    : evento.equipo_local;
 
   return (
     <Card
@@ -31,7 +30,11 @@ function EventoCardChico({ evento, onClick }) {
       }}
     >
       <Box sx={{ p: '12px 14px' }}>
-        <Typography fontWeight={500} fontSize={14} mb={0.75}>{titulo}</Typography>
+        <Typography fontWeight={500} fontSize={14} mb={0.75}>
+          {evento.equipo_visitante
+            ? `${evento.equipo_local} vs. ${evento.equipo_visitante}`
+            : evento.equipo_local}
+        </Typography>
         <Typography fontSize={12} color="text.secondary" display="flex" alignItems="center" gap={0.4}>
           <CalendarTodayIcon sx={{ fontSize: 12 }} />{fechaStr}
         </Typography>
@@ -42,32 +45,69 @@ function EventoCardChico({ evento, onClick }) {
 
 function Catalogo() {
   const navigate = useNavigate();
+  const { tokenListo } = useAuth();
   const [searchParams] = useSearchParams();
   const [faseActiva, setFaseActiva] = useState('Todos');
   const [eventos, setEventos] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
 
   const q = searchParams.get('q')?.toLowerCase() || '';
 
-  useEffect(() => {
-    listarEventos()
-      .then(setEventos)
-      .catch(err => console.error('Error al cargar eventos:', err))
-      .finally(() => setCargando(false));
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    setError('');
+    try {
+      const data = await listarEventos();
+      setEventos(data);
+    } catch (err) {
+      const msg = err?.response?.data?.detail || err?.message || 'Error al cargar eventos';
+      setError(msg);
+      console.error('Error al cargar eventos:', err);
+    } finally {
+      setCargando(false);
+    }
   }, []);
+
+  useEffect(() => {
+    if (!tokenListo) return;
+    cargar();
+  }, [tokenListo, cargar]);
 
   const filtrados = eventos.filter(e => {
     const nom = `${e.equipo_local} ${e.equipo_visitante || ''}`.toLowerCase();
-    const matchQ = !q || nom.includes(q);
-    return matchQ;
+    return !q || nom.includes(q);
   });
 
-  const resto = filtrados;
+  if (cargando) {
+    return (
+      <Box sx={{ p: 6, textAlign: 'center', color: 'text.disabled' }}>
+        <Typography>Cargando eventos...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ px: { xs: 2, md: 3 }, py: 3, maxWidth: 1200, mx: 'auto' }}>
+        <Alert
+          severity="error"
+          action={
+            <Button size="small" startIcon={<RefreshIcon />} onClick={cargar}>
+              Reintentar
+            </Button>
+          }
+          sx={{ mb: 2, fontSize: 13 }}
+        >
+          {error}
+        </Alert>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ px: { xs: 2, md: 3 }, py: 3, maxWidth: 1200, mx: 'auto' }}>
 
-      {/* Filtros */}
       <Stack direction="row" gap={1} mb={3} flexWrap="wrap" alignItems="center">
         {FASES.map(fase => (
           <Chip
@@ -101,15 +141,14 @@ function Catalogo() {
         />
       </Stack>
 
-      {/* Todos */}
-      {resto.length > 0 && (
+      {filtrados.length > 0 && (
         <>
           <Typography fontSize={12} fontWeight={500} color="text.secondary"
             textTransform="uppercase" letterSpacing={0.5} mb={1.5}>
             Eventos
           </Typography>
           <Grid container spacing={1.75}>
-            {resto.map(e => (
+            {filtrados.map(e => (
               <Grid item xs={12} sm={6} md={4} key={e.id_evento}>
                 <EventoCardChico evento={e} onClick={() => navigate(`/evento/${e.id_evento}`)} />
               </Grid>
@@ -118,9 +157,9 @@ function Catalogo() {
         </>
       )}
 
-      {filtrados.length === 0 && (
+      {filtrados.length === 0 && !cargando && (
         <Box sx={{ textAlign: 'center', py: 6, color: 'text.disabled' }}>
-          <Typography fontSize={14}>No se encontraron eventos con ese filtro</Typography>
+          <Typography fontSize={14}>No se encontraron eventos</Typography>
         </Box>
       )}
 

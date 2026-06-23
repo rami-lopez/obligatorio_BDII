@@ -49,10 +49,14 @@ function RutaProtegida({ children, rolesPermitidos }) {
   return children;
 }
 
-function HomeRedirect() {
-  const { rol, tokenListo } = useAuth();
+function LandingRedirect() {
+  const { isAuthenticated, isLoading, tokenListo, rol } = useAuth();
 
-  if (!tokenListo) return <LoadingScreen />;
+  if (isLoading || (isAuthenticated && !tokenListo)) return <LoadingScreen />;
+
+  if (!isAuthenticated) return <Login />;
+
+  if (rol === 'sin_registro') return <Navigate to="/completar-registro" replace />;
 
   if (rol === 'administrador') return <Navigate to="/admin/eventos" replace />;
   if (rol === 'funcionario')   return <Navigate to="/funcionario" replace />;
@@ -63,7 +67,8 @@ function HomeRedirect() {
 function App() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route path="/login" element={<LandingRedirect />} />
+      <Route path="/" element={<LandingRedirect />} />
       <Route path="/completar-registro" element={<CompletarRegistro />} />
 
       <Route element={
@@ -71,7 +76,6 @@ function App() {
           <ClienteLayout />
         </RutaProtegida>
       }>
-        <Route index element={<HomeRedirect />} />
         <Route path="evento/:id" element={<DetalleEvento />} />
         <Route path="checkout" element={<Checkout />} />
         <Route path="mis-entradas" element={<MisEntradas />} />
@@ -98,7 +102,7 @@ function App() {
         <Route index element={<ValidacionQR />} />
       </Route>
 
-      <Route path="*" element={<HomeRedirect />} />
+      <Route path="*" element={<LandingRedirect />} />
     </Routes>
   );
 }
