@@ -269,8 +269,6 @@ CREATE TABLE token_qr (
     id_token            INT             NOT NULL AUTO_INCREMENT,
     codigo_hash         VARCHAR(255)    NOT NULL,
     generado_en         DATETIME        NOT NULL DEFAULT NOW(),
-    expira_en           DATETIME        NOT NULL,
-    activo              TINYINT(1)      NOT NULL DEFAULT 1,
     id_entrada          INT             NOT NULL,
 
     CONSTRAINT pk_token_qr          PRIMARY KEY (id_token),
