@@ -1,5 +1,4 @@
 from fastapi import HTTPException, status
-from app.schemas.event import EventCreate
 from app.services.qr import generar_hash_qr, verificar_hash_qr
 from app.db.database import fetch_all, fetch_one, execute, transaction
 
@@ -36,7 +35,15 @@ async def post_validar(
     identificador_disp: str,
     mail_funcionario: str,
 ):
-    entradas = await fetch_all(
+    try:
+        id_entrada = verificar_hash_qr(hash_ingresado)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+    entrada = await fetch_one(
         """
         SELECT 
             e.id_entrada,
@@ -46,57 +53,71 @@ async def post_validar(
         FROM ticketing_mundial.entrada e
         JOIN ticketing_mundial.asignacion a
             ON a.id_evento = e.id_evento
-            AND a.codigo_sector = e.codigo_sector
-        WHERE a.mail_funcionario = %s
-          AND e.estado <> 'consumida'
+           AND a.codigo_sector = e.codigo_sector
+        JOIN ticketing_mundial.dispositivo d
+            ON d.mail_funcionario = a.mail_funcionario
+        WHERE e.id_entrada = %s
+          AND a.mail_funcionario = %s
+          AND d.identificador = %s
         """,
-        (mail_funcionario,),
+        (id_entrada, mail_funcionario, identificador_disp),
     )
 
-    coincidencias = []
-
-    for entrada in entradas:
-        if verificar_hash_qr(entrada["id_entrada"], hash_ingresado):
-            coincidencias.append(entrada)
-
-    if len(coincidencias) == 0:
+    if not entrada:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Código QR inválido, expirado o no pertenece a un sector asignado",
+            detail="Entrada inválida o no pertenece a un sector asignado al funcionario",
         )
 
-    if len(coincidencias) > 1:
+    if entrada["estado"] != "activa":
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Código ambiguo. Hay más de una entrada posible. Reintente en unos segundos.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La entrada ya fue consumida o no está activa",
         )
 
-    entrada = coincidencias[0]
-    id_entrada = entrada["id_entrada"]
+    try:
+        async with transaction() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute(
+                    """
+                    INSERT INTO ticketing_mundial.token_qr 
+                    (codigo_hash, generado_en, id_entrada) 
+                    VALUES (%s, NOW(), %s)
+                    """,
+                    (hash_ingresado, id_entrada),
+                )
 
-    async with transaction() as conn:
-        async with conn.cursor() as cursor:
-            await cursor.execute(
-                """
-                INSERT INTO ticketing_mundial.token_qr 
-                (codigo_hash, generado_en, id_entrada) 
-                VALUES (%s, NOW(), %s)
-                """,
-                (hash_ingresado, id_entrada),
+                await cursor.execute("SELECT LAST_INSERT_ID()")
+                row = await cursor.fetchone()
+                id_token = row[0]
+
+                await cursor.execute(
+                    """
+                    INSERT INTO ticketing_mundial.validacion 
+                    (mail_funcionario, identificador_disp, id_entrada, id_token)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (mail_funcionario, identificador_disp, id_entrada, id_token),
+                )
+
+                await cursor.execute(
+                    """
+                    UPDATE ticketing_mundial.entrada
+                    SET estado = 'consumida'
+                    WHERE id_entrada = %s
+                      AND estado = 'activa'
+                    """,
+                    (id_entrada,),
+                )
+
+    except OperationalError as e:
+        if e.args and e.args[0] == 1644:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=e.args[1],
             )
 
-            await cursor.execute("SELECT LAST_INSERT_ID()")
-            row = await cursor.fetchone()
-            id_token = row[0]
-
-            await cursor.execute(
-                """
-                INSERT INTO ticketing_mundial.validacion 
-                (mail_funcionario, identificador_disp, id_entrada, id_token)
-                VALUES (%s, %s, %s, %s)
-                """,
-                (mail_funcionario, identificador_disp, id_entrada, id_token),
-            )
+        raise
 
     return {
         "mensaje": "Entrada validada correctamente",
