@@ -12,6 +12,7 @@ import DetalleEvento from './pages/cliente/DetalleEvento';
 import Checkout from './pages/cliente/Checkout';
 import MisEntradas from './pages/cliente/MisEntradas';
 import Transferencias from './pages/cliente/Transferencias';
+import PasarelaPago from './pages/cliente/PasarelaPago';
 import AdminEventos from './pages/admin/AdminEventos';
 import AdminEstadios from './pages/admin/AdminEstadios';
 import AdminSectoresEvento from './pages/admin/AdminSectoresEvento';
@@ -66,6 +67,7 @@ function App() {
         <Route path="checkout" element={<Checkout />} />
         <Route path="mis-entradas" element={<MisEntradas />} />
         <Route path="transferencias" element={<Transferencias />} />
+        <Route path="pasarela-pago/:idVenta" element={<PasarelaPago />} />
       </Route>
 
       <Route path="/admin" element={

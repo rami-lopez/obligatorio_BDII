@@ -232,7 +232,7 @@ CREATE TABLE entrada (
         REFERENCES evento_sector (id_evento, id_estadio, codigo_sector),
     CONSTRAINT fk_entrada_propietario       FOREIGN KEY (mail_propietario)
         REFERENCES usuario (mail),
-    CONSTRAINT ck_entrada_estado            CHECK (estado IN ('activa', 'transferida', 'consumida', 'anulada'))
+    CONSTRAINT ck_entrada_estado            CHECK (estado IN ('pendiente', 'activa', 'transferida', 'consumida', 'anulada'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================

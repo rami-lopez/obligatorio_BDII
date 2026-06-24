@@ -235,4 +235,71 @@ END$$
 
 DELIMITER ;
 
+-- Comprar entradas
+
+DELIMITER $$
+
+CREATE PROCEDURE SP_ComprarEntradas(
+    IN p_mail_usuario    VARCHAR(255),
+    IN p_id_evento       INT,
+    IN p_id_estadio      INT,
+    IN p_codigo_sector   VARCHAR(10),
+    IN p_cantidad        INT
+)
+BEGIN
+    DECLARE v_costo     DECIMAL(10,2);
+    DECLARE v_monto     DECIMAL(10,2);
+    DECLARE v_tasa      DECIMAL(5,4) DEFAULT 0.0500;
+    DECLARE v_i         INT DEFAULT 0;
+    DECLARE v_existe    INT;
+    DECLARE v_id_venta  INT;
+
+    IF p_cantidad < 1 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cantidad invalida';
+    END IF;
+
+    IF p_cantidad > 5 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No se pueden comprar mas de 5 entradas';
+    END IF;
+
+    SELECT COUNT(*) INTO v_existe
+    FROM evento_sector
+    WHERE id_evento = p_id_evento
+      AND id_estadio = p_id_estadio
+      AND codigo_sector = p_codigo_sector;
+
+    IF v_existe = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sector no habilitado para el evento';
+    END IF;
+
+    SELECT costo INTO v_costo
+    FROM sector
+    WHERE id_estadio = p_id_estadio AND codigo = p_codigo_sector;
+
+    IF v_costo IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Sector inexistente';
+    END IF;
+
+    SET v_monto = v_costo * p_cantidad * (1 + v_tasa);
+
+    START TRANSACTION;
+
+    INSERT INTO venta(estado, monto_total, tasa_comision, mail_usuario)
+    VALUES ('pendiente', v_monto, v_tasa, p_mail_usuario);
+
+    SET v_id_venta = LAST_INSERT_ID();
+
+    WHILE v_i < p_cantidad DO
+        INSERT INTO entrada(estado, id_venta, id_evento, id_estadio, codigo_sector, mail_propietario)
+        VALUES ('pendiente', v_id_venta, p_id_evento, p_id_estadio, p_codigo_sector, p_mail_usuario);
+        SET v_i = v_i + 1;
+    END WHILE;
+
+    COMMIT;
+
+    SELECT v_id_venta AS id_venta, p_cantidad AS cantidad, v_monto AS monto_total;
+END$$
+
+DELIMITER ;
+
 SET FOREIGN_KEY_CHECKS = 1;

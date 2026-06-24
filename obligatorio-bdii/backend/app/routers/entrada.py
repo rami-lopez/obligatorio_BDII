@@ -53,5 +53,6 @@ async def qr(
 ):
     return await obtener_qr_entrada(
         id_entrada,
-        current_user["mail"]
+        current_user["mail"],
+        es_funcionario=current_user.get("auth0_role") == "funcionario"
     )

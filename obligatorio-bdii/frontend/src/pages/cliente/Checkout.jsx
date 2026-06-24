@@ -143,13 +143,13 @@ function Checkout() {
     setLoading(true);
     setErrorMsg('');
     try {
-      await comprar({
+      const res = await comprar({
         id_evento: evento.id_evento,
         id_estadio: evento.id_estadio,
         codigo_sector: sector.codigo,
         cantidad,
       });
-      setConfirmado(true);
+      navigate(`/pasarela-pago/${res.id_venta}`, { state: { evento, sector, cantidad } });
     } catch (err) {
       const detail = err?.response?.data?.detail || 'Error al procesar la compra';
       setErrorMsg(detail);

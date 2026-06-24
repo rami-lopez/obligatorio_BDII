@@ -79,7 +79,9 @@ async def fetch_one(query: str, params: tuple[Any, ...] | list[Any] | None = Non
 	async with acquire_connection() as connection:
 		async with connection.cursor(DictCursor) as cursor:
 			await cursor.execute(query, params or ())
-			return await cursor.fetchone()
+			result = await cursor.fetchone()
+			await connection.commit()
+			return result
 
 
 async def fetch_all(query: str, params: tuple[Any, ...] | list[Any] | None = None) -> list[dict[str, Any]]:
@@ -87,6 +89,7 @@ async def fetch_all(query: str, params: tuple[Any, ...] | list[Any] | None = Non
 		async with connection.cursor(DictCursor) as cursor:
 			await cursor.execute(query, params or ())
 			rows = await cursor.fetchall()
+			await connection.commit()
 			return list(rows)
 
 
@@ -96,3 +99,13 @@ async def execute(query: str, params: tuple[Any, ...] | list[Any] | None = None)
 			await cursor.execute(query, params or ())
 			await connection.commit()
 			return cursor.lastrowid or cursor.rowcount
+
+
+async def call_procedure(name: str, args: tuple[Any, ...]) -> dict[str, Any] | None:
+	async with acquire_connection() as connection:
+		async with connection.cursor(DictCursor) as cursor:
+			placeholders = ",".join(["%s"] * len(args))
+			q = f"CALL {name}({placeholders})"
+			await cursor.execute(q, args)
+			result = await cursor.fetchone()
+			return result
