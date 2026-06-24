@@ -34,7 +34,7 @@ async def get_current_user(
     if profile is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
-    profile["auth0_role"] = extract_auth0_role(payload)
+    profile["auth0_role"] = extract_auth0_role(payload) or "usuario_general"
     profile["auth0_sub"] = auth0_sub
 
     return profile

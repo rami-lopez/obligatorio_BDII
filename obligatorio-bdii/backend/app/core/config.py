@@ -25,16 +25,28 @@ def _parse_database_url(database_url: str) -> dict[str, object]:
 
 
 def _load_environment_file() -> None:
-    project_root = Path(__file__).resolve().parents[2]
-    
-    # 1. Intentar cargar el .env base (el que creas con cp .env.example .env)
-    base_env = project_root / ".env"
-    if base_env.exists():
-        load_dotenv(base_env)
+    backend_root = Path(__file__).resolve().parents[2]
+    project_root = backend_root.parent
 
-    # 2. Intentar cargar el específico del entorno (local, facultad) para sobreescribir
+    def _load_with_priority(*paths: Path) -> None:
+        for p in paths:
+            if p.exists():
+                load_dotenv(p, override=False)
+
     app_env = os.getenv("APP_ENV", "local").strip() or "local"
-    env_specific = project_root / f".env.{app_env}"
+
+    # 1. Cargar desde raíz del proyecto primero (menor prioridad)
+    _load_with_priority(
+        project_root / ".env",
+        project_root / f".env.{app_env}",
+    )
+
+    # 2. Cargar .env del backend (media prioridad, override para pisar proyecto)
+    if (backend_root / ".env").exists():
+        load_dotenv(backend_root / ".env", override=True)
+
+    # 3. Cargar .env específico del entorno desde backend/ (máxima prioridad)
+    env_specific = backend_root / f".env.{app_env}"
     if env_specific.exists():
         load_dotenv(env_specific, override=True)
 
@@ -58,6 +70,10 @@ class Settings:
     auth0_algorithms: str = field(default_factory=lambda: os.getenv("AUTH0_ALGORITHMS", "RS256"))
     auth0_namespace: str = field(default_factory=lambda: os.getenv("AUTH0_NAMESPACE", "https://ticketing-mundial"))
     auth0_client_id: str = field(default_factory=lambda: os.getenv("AUTH0_CLIENT_ID", ""))
+    auth0_client_secret: str = field(default_factory=lambda: os.getenv("AUTH0_CLIENT_SECRET", ""))
+    auth0_signup_client_id: str = field(default_factory=lambda: os.getenv("AUTH0_SIGNUP_CLIENT_ID", os.getenv("AUTH0_CLIENT_ID", "")))
+    auth0_connection: str = field(default_factory=lambda: os.getenv("AUTH0_CONNECTION", "Username-Password-Authentication"))
+    auth0_default_role_id: str = field(default_factory=lambda: os.getenv("AUTH0_DEFAULT_ROLE_ID", ""))
     cors_origins: list[str] = field(
         default_factory=lambda: [
             origin.strip()

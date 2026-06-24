@@ -7,12 +7,12 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useAuth } from '../hooks/useAuth';
 
-export default function Login() {
+export default function Registrar() {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuth();
-
+  const { register, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -20,7 +20,9 @@ export default function Login() {
   const validate = () => {
     if (!email.trim()) return 'Ingresá tu email';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Email inválido';
-    if (!password) return 'Ingresá tu contraseña';
+    if (!password) return 'Ingresá una contraseña';
+    if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres';
+    if (password !== confirmPassword) return 'Las contraseñas no coinciden';
     return '';
   };
 
@@ -31,10 +33,10 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      await login(email.trim(), password);
-      navigate('/', { replace: true });
+      await register(email.trim(), password);
+      navigate('/completar-registro', { replace: true, state: { email: email.trim() } });
     } catch (err) {
-      const msg = err?.response?.data?.detail || 'Error al iniciar sesión. Verificá tus credenciales.';
+      const msg = err?.response?.data?.detail || 'Error al crear la cuenta. Intentá de nuevo.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -71,8 +73,7 @@ export default function Login() {
             color="text.secondary"
             sx={{ mt: 1, maxWidth: 300, mx: 'auto' }}
           >
-            Sistema de ticketing oficial del Mundial 2026.
-            Gestioná tus entradas, estadios y eventos desde un solo lugar.
+            Creá tu cuenta para acceder al sistema de ticketing del Mundial 2026.
           </Typography>
         </Box>
 
@@ -82,10 +83,10 @@ export default function Login() {
           textAlign: 'left',
         }}>
           <Typography fontWeight={500} fontSize={15} mb={0.5} textAlign="center">
-            Iniciar sesión
+            Crear cuenta
           </Typography>
           <Typography fontSize={13} color="text.secondary" mb={2.5} textAlign="center">
-            Accedé con tu cuenta para continuar
+            Ingresá tu email y una contraseña segura
           </Typography>
 
           <Box component="form" onSubmit={handleSubmit} noValidate>
@@ -109,8 +110,8 @@ export default function Login() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               error={!!error && !!password}
-              sx={{ mb: 1 }}
-              autoComplete="current-password"
+              sx={{ mb: 2 }}
+              autoComplete="new-password"
               slotProps={{
                 input: {
                   endAdornment: (
@@ -129,6 +130,18 @@ export default function Login() {
               }}
             />
 
+            <TextField
+              label="Confirmar contraseña"
+              type={showPassword ? 'text' : 'password'}
+              size="small"
+              fullWidth
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              error={!!error && !!confirmPassword}
+              sx={{ mb: 1 }}
+              autoComplete="new-password"
+            />
+
             {error && (
               <Typography fontSize={12} color="error.main" sx={{ mt: 0.5, mb: 1 }}>
                 {error}
@@ -143,18 +156,18 @@ export default function Login() {
               disabled={loading}
               sx={{ py: 1.25, fontSize: 14, mt: 1.5 }}
             >
-              {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+              {loading ? 'Creando cuenta...' : 'Crear cuenta'}
             </Button>
           </Box>
 
           <Typography fontSize={13} color="text.secondary" textAlign="center" sx={{ mt: 2.5 }}>
-            ¿No tenés cuenta?{' '}
+            ¿Ya tenés cuenta?{' '}
             <Box
               component={RouterLink}
-              to="/registrar"
+              to="/login"
               sx={{ color: 'secondary.main', fontWeight: 500, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
             >
-              Crear cuenta
+              Iniciar sesión
             </Box>
           </Typography>
 

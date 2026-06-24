@@ -39,8 +39,8 @@ async def complete_user_profile(
     if not auth0_sub:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid access token")
 
-    mail = auth0_payload.get("email") or auth0_sub
-    return await complete_registration(payload.model_dump(), auth0_sub, mail)
+    mail = payload.mail or auth0_payload.get("email") or auth0_sub
+    return await complete_registration(payload.model_dump(exclude={"mail"}), auth0_sub, mail)
 
 
 @router.post(

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import {
   Box, Typography, TextField, Button,
-  MenuItem, Paper, Stack,
+  MenuItem, Paper,
 } from '@mui/material';
 import { completarRegistro } from '../api/usuarios';
 import { useAuth } from '../hooks/useAuth';
@@ -12,7 +12,9 @@ const TIPOS_DOC = ['Cédula de identidad', 'Pasaporte', 'DNI'];
 
 export default function CompletarRegistro() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const location = useLocation();
+  const registeredEmail = location.state?.email;
+  const { user, isAuthenticated, isLoading, rol, refreshProfile } = useAuth();
 
   const [form, setForm] = useState({
     pais_doc: '', tipo_doc: '', nro_doc: '',
@@ -37,18 +39,27 @@ export default function CompletarRegistro() {
     if (!validar()) return;
     setLoading(true);
     try {
-      const perfil = await completarRegistro({
+      await completarRegistro({
+        mail: registeredEmail || user?.email,
         ...form,
         telefonos: telefono ? [telefono] : [],
       });
+      await refreshProfile();
       navigate('/', { replace: true });
     } catch (err) {
-      console.error('Error al completar registro:', err);
-      setErrors({ general: 'Hubo un error al guardar. Intentá de nuevo.' });
+      const detail = err?.response?.data?.detail;
+      if (detail) setErrors({ general: detail });
+      else setErrors({ general: 'Hubo un error al guardar. Intentá de nuevo.' });
     } finally {
       setLoading(false);
     }
   };
+
+  if (isLoading) return null;
+
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  if (rol && rol !== 'sin_registro') return <Navigate to="/" replace />;
 
   return (
     <Box sx={{

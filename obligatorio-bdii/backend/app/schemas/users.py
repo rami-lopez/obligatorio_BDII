@@ -24,6 +24,7 @@ class UserBase(BaseModel):
 class CompleteRegistrationRequest(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
+    mail: EmailStr | None = None
     pais_doc: str
     tipo_doc: str
     nro_doc: str

@@ -19,6 +19,7 @@ import AdminFuncionarios from './pages/admin/AdminFuncionarios';
 import ValidacionQR from './pages/funcionario/ValidacionQR';
 import CompletarRegistro from './pages/CompletarRegistro';
 import Login from './pages/Login';
+import Registrar from './pages/Registrar';
 
 function LoadingScreen() {
   return (
@@ -29,14 +30,11 @@ function LoadingScreen() {
 }
 
 function RutaProtegida({ children, rolesPermitidos }) {
-  const { isAuthenticated, isLoading, tokenListo, rol, loginWithRedirect } = useAuth();
+  const { isAuthenticated, isLoading, tokenListo, rol } = useAuth();
 
   if (isLoading || (isAuthenticated && !tokenListo)) return <LoadingScreen />;
 
-  if (!isAuthenticated) {
-    loginWithRedirect();
-    return null;
-  }
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
 
   if (rol === 'sin_registro') return <Navigate to="/completar-registro" replace />;
 
@@ -67,7 +65,8 @@ function LandingRedirect() {
 function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LandingRedirect />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/registrar" element={<Registrar />} />
       <Route path="/" element={<LandingRedirect />} />
       <Route path="/completar-registro" element={<CompletarRegistro />} />
 

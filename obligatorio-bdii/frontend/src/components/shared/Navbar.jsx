@@ -25,7 +25,7 @@ const MOCK_NOTIFS = [
 function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { perfil, user, logout, isAuthenticated, loginWithRedirect } = useAuth();
+  const { perfil, user, logout, isAuthenticated } = useAuth();
   const [search, setSearch] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
   const [notifs, setNotifs] = useState(MOCK_NOTIFS);

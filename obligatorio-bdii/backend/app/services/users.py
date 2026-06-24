@@ -137,7 +137,16 @@ async def complete_registration(payload: dict, auth0_sub: str, mail: str) -> dic
             )
 
     created = await get_user_profile_by_auth0_sub(auth0_sub)
-    return created or {}
+    if created is None:
+        created = await get_user_profile(mail)
+
+    if created is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="El usuario fue creado pero no se pudo recuperar el perfil",
+        )
+
+    return created
 
 
 async def promote_to_funcionario(mail: str, nro_legajo: str) -> dict:
