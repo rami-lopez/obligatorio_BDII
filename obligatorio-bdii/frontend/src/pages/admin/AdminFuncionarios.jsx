@@ -76,11 +76,29 @@ function AsignacionDialog({ open, funcionario, onClose }) {
   };
 
   const handleDesasignar = async (a) => {
+    const confirmar = window.confirm(
+      `¿Está seguro de que desea quitar la asignación del sector ${a.codigo_sector}?`
+    );
+
+    if (!confirmar) return;
+
     try {
-      const result = await desasignarSector(
-        funcionario.mail, a.id_evento, a.id_estadio, a.codigo_sector
+      await desasignarSector(
+        funcionario.mail,
+        a.id_evento,
+        a.id_estadio,
+        a.codigo_sector
       );
-      setAsignaciones(result);
+
+      setAsignaciones(prev =>
+        prev.filter(
+          item =>
+            !(
+              item.id_evento === a.id_evento &&
+              item.codigo_sector === a.codigo_sector
+            )
+        )
+      );
     } catch (err) {
       setError(err?.response?.data?.detail || 'Error al desasignar');
     }
