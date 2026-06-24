@@ -17,3 +17,19 @@ class MayorCompradorResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ValidacionReporteResponse(BaseModel):
+    id_validacion: int
+    fecha_hora: datetime
+    mail_funcionario: str
+    identificador_disp: str
+    id_entrada: int
+    id_evento: int
+    equipo_local: str
+    equipo_visitante: str | None
+    codigo_sector: str
+    evento_fecha: datetime
+    mail_propietario: str
+
+    class Config:
+        from_attributes = True

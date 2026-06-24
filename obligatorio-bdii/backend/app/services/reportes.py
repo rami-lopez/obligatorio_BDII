@@ -25,3 +25,26 @@ async def get_mayor_comprador() -> list | None:
         """,
         (),
     )
+
+async def get_todas_validaciones() -> list | None:
+    return await fetch_all(
+        """
+        SELECT
+            v.id_validacion,
+            v.fecha_hora,
+            v.mail_funcionario,
+            v.identificador_disp,
+            v.id_entrada,
+            ev.id_evento,
+            ev.equipo_local,
+            ev.equipo_visitante,
+            e.codigo_sector,
+            ev.fecha_hora AS evento_fecha,
+            e.mail_propietario
+        FROM ticketing_mundial.validacion v
+        JOIN ticketing_mundial.entrada e ON v.id_entrada = e.id_entrada
+        JOIN ticketing_mundial.evento ev ON e.id_evento = ev.id_evento
+        ORDER BY v.fecha_hora DESC
+        """,
+        (),
+    )

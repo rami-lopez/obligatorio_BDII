@@ -16,6 +16,8 @@ import AdminEventos from './pages/admin/AdminEventos';
 import AdminEstadios from './pages/admin/AdminEstadios';
 import AdminSectoresEvento from './pages/admin/AdminSectoresEvento';
 import AdminFuncionarios from './pages/admin/AdminFuncionarios';
+import AdminVentas from './pages/admin/AdminVentas';
+import AdminValidaciones from './pages/admin/AdminValidaciones';
 import ValidacionQR from './pages/funcionario/ValidacionQR';
 import CompletarRegistro from './pages/CompletarRegistro';
 import Login from './pages/Login';
@@ -76,6 +78,8 @@ function App() {
         <Route path="eventos/:id/sectores" element={<AdminSectoresEvento />} />
         <Route path="estadios" element={<AdminEstadios />} />
         <Route path="funcionarios" element={<AdminFuncionarios />} />
+        <Route path="ventas" element={<AdminVentas />} />
+        <Route path="validaciones" element={<AdminValidaciones />} />
       </Route>
 
       <Route path="/funcionario" element={
