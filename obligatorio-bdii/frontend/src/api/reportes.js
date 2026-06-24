@@ -5,3 +5,6 @@ export const getEventosMasVendidos = () =>
 
 export const getMayoresCompradores = () =>
   client.get('/reportes/mayores-compradores').then(r => r.data);
+
+export const getValidacionesReporte = () =>
+  client.get('/reportes/validaciones').then(r => r.data);
