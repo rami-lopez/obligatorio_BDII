@@ -418,27 +418,78 @@ function EntradaCard({ entrada, activa, onVerQR, onTransferir }) {
     : entrada.equipo_local;
 
   return (
-    <Box sx={{
-      border: '0.5px solid', borderColor: 'divider', borderRadius: 2,
-      overflow: 'hidden', bgcolor: 'background.paper',
-      opacity: activa ? 1 : 0.65,
-    }}>
-      <Box sx={{ height: 90, bgcolor: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Typography color="rgba(255,255,255,0.3)" fontSize={11}>Estadio {entrada.estadio}</Typography>
+    <Box
+      sx={{
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 2.5,
+        overflow: 'hidden',
+        bgcolor: 'background.paper',
+        opacity: activa ? 1 : 0.65,
+        transition: 'all 0.18s ease',
+        '&:hover': activa
+          ? {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 8px 22px rgba(15, 23, 42, 0.08)',
+              borderColor: '#B9D7EF',
+            }
+          : {},
+      }}
+    >
+      <Box
+        sx={{
+          height: 96,
+          background: 'linear-gradient(135deg, #E6F1FB 0%, #F7FAFC 100%)',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: 2,
+        }}
+      >
+        <Stack alignItems="center" spacing={0.4}>
+          <Typography
+            fontSize={10}
+            color="text.secondary"
+            textTransform="uppercase"
+            letterSpacing={0.8}
+          >
+            Estadio
+          </Typography>
+
+          <Typography
+            fontWeight={700}
+            fontSize={15}
+            color="primary.main"
+            textAlign="center"
+            noWrap
+            sx={{ maxWidth: 260 }}
+          >
+            {entrada.estadio}
+          </Typography>
+        </Stack>
       </Box>
-      <Box sx={{ p: '10px 12px' }}>
-        <Stack direction="row" alignItems="center" gap={1} mb={0.75}>
+
+      <Box sx={{ p: 1.5 }}>
+        <Stack direction="row" alignItems="center" gap={1} mb={1}>
           <EstadoPill estado={activa ? 'activa' : entrada.estado} />
           {activa && <TransferenciasChip cantidad={entrada.transferencias} />}
         </Stack>
 
-        <Typography fontWeight={500} fontSize={13} mb={0.5}>{titulo}</Typography>
-        <Stack gap={0.25} mb={1}>
-          <Typography fontSize={11} color="text.secondary" display="flex" alignItems="center" gap={0.4}>
-            <PlaceIcon sx={{ fontSize: 12 }} />Sector {entrada.codigo_sector} · {entrada.estadio}
+        <Typography fontWeight={700} fontSize={15} mb={0.75} lineHeight={1.25}>
+          {titulo}
+        </Typography>
+
+        <Stack gap={0.45} mb={1.25}>
+          <Typography fontSize={12} color="text.secondary" display="flex" alignItems="center" gap={0.5}>
+            <PlaceIcon sx={{ fontSize: 14 }} />
+            Sector {entrada.codigo_sector} · {entrada.estadio}
           </Typography>
-          <Typography fontSize={11} color="text.secondary" display="flex" alignItems="center" gap={0.4}>
-            <CalendarTodayIcon sx={{ fontSize: 11 }} />{fecha}{hora ? ` · ${hora} hs` : ''}
+
+          <Typography fontSize={12} color="text.secondary" display="flex" alignItems="center" gap={0.5}>
+            <CalendarTodayIcon sx={{ fontSize: 13 }} />
+            {fecha}{hora ? ` · ${hora} hs` : ''}
           </Typography>
         </Stack>
 
@@ -450,10 +501,15 @@ function EntradaCard({ entrada, activa, onVerQR, onTransferir }) {
               fullWidth
               startIcon={<QrCodeIcon sx={{ fontSize: 14 }} />}
               onClick={() => onVerQR(entrada)}
-              sx={{ fontSize: 12, py: 0.6 }}
+              sx={{
+                fontSize: 12,
+                py: 0.65,
+                borderRadius: 1.5,
+              }}
             >
               Ver QR
             </Button>
+
             <Button
               size="small"
               fullWidth
@@ -461,10 +517,16 @@ function EntradaCard({ entrada, activa, onVerQR, onTransferir }) {
               onClick={() => onTransferir(entrada)}
               disabled={entrada.transferencias >= MAX_TRANSFERENCIAS}
               sx={{
-                fontSize: 12, py: 0.6,
-                border: '0.5px solid #378ADD', color: '#185FA5',
+                fontSize: 12,
+                py: 0.65,
+                borderRadius: 1.5,
+                border: '1px solid #378ADD',
+                color: '#185FA5',
                 '&:hover': { bgcolor: '#E6F1FB' },
-                '&.Mui-disabled': { border: '0.5px solid', borderColor: 'divider' },
+                '&.Mui-disabled': {
+                  border: '1px solid',
+                  borderColor: 'divider',
+                },
               }}
             >
               Transferir
@@ -477,7 +539,11 @@ function EntradaCard({ entrada, activa, onVerQR, onTransferir }) {
             fullWidth
             disabled
             startIcon={<QrCodeIcon sx={{ fontSize: 14 }} />}
-            sx={{ fontSize: 12, py: 0.6 }}
+            sx={{
+              fontSize: 12,
+              py: 0.65,
+              borderRadius: 1.5,
+            }}
           >
             {entrada.estado === 'consumida' ? 'QR inválido' : 'Transferida'}
           </Button>
