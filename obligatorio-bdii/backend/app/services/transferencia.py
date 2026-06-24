@@ -69,6 +69,21 @@ async def crear_transferencia(
             detail="Usuario destino inexistente"
         )
 
+    usuario_general_destino = await fetch_one(
+        """
+        SELECT mail_usuario
+        FROM usuario_general
+        WHERE mail_usuario = %s
+        """,
+        (mail_destino,)
+    )
+
+    if usuario_general_destino is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Solo se pueden transferir entradas a usuarios generales"
+        )
+
     pendiente = await fetch_one(
         """
         SELECT id_transferencia
