@@ -30,54 +30,80 @@ function formatearFecha(fecha_hora) {
   };
 }
 
-function QRCode({ hash, size = 140 }) {
+function QRCode({ hash, size = 128 }) {
   return (
-    <Stack spacing={1.5} alignItems="center" sx={{ width: '100%' }}>
-      <svg width={size} height={size} viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
-        <rect width="140" height="140" fill="transparent" />
-        <rect x="10" y="10" width="50" height="50" rx="4" fill="none" stroke="currentColor" strokeWidth="3" />
-        <rect x="20" y="20" width="30" height="30" rx="2" fill="currentColor" />
-        <rect x="80" y="10" width="50" height="50" rx="4" fill="none" stroke="currentColor" strokeWidth="3" />
-        <rect x="90" y="20" width="30" height="30" rx="2" fill="currentColor" />
-        <rect x="10" y="80" width="50" height="50" rx="4" fill="none" stroke="currentColor" strokeWidth="3" />
-        <rect x="20" y="90" width="30" height="30" rx="2" fill="currentColor" />
-        <rect x="80" y="80" width="8" height="8" fill="currentColor" />
-        <rect x="92" y="80" width="8" height="8" fill="currentColor" />
-        <rect x="104" y="80" width="8" height="8" fill="currentColor" />
-        <rect x="116" y="80" width="8" height="8" fill="currentColor" />
-        <rect x="80" y="92" width="8" height="8" fill="currentColor" />
-        <rect x="104" y="92" width="8" height="8" fill="currentColor" />
-        <rect x="80" y="104" width="8" height="8" fill="currentColor" />
-        <rect x="92" y="104" width="8" height="8" fill="currentColor" />
-        <rect x="116" y="104" width="8" height="8" fill="currentColor" />
-        <rect x="80" y="116" width="8" height="8" fill="currentColor" />
-        <rect x="104" y="116" width="8" height="8" fill="currentColor" />
-        <rect x="116" y="116" width="8" height="8" fill="currentColor" />
-        <rect x="68" y="10" width="4" height="4" fill="currentColor" />
-        <rect x="68" y="18" width="4" height="8" fill="currentColor" />
-        <rect x="68" y="30" width="4" height="4" fill="currentColor" />
-        <rect x="68" y="38" width="4" height="16" fill="currentColor" />
-        <rect x="68" y="58" width="4" height="4" fill="currentColor" />
-        <rect x="68" y="66" width="4" height="8" fill="currentColor" />
-      </svg>
+    <Stack spacing={1.25} alignItems="center" sx={{ width: '100%' }}>
+      <Box
+        sx={{
+          width: size,
+          height: size,
+          borderRadius: 2,
+          bgcolor: '#fff',
+          border: '1px solid',
+          borderColor: 'divider',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#1f1f1f',
+        }}
+      >
+        <svg width={size - 20} height={size - 20} viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+          <rect width="140" height="140" fill="transparent" />
+          <rect x="10" y="10" width="50" height="50" rx="4" fill="none" stroke="currentColor" strokeWidth="3" />
+          <rect x="20" y="20" width="30" height="30" rx="2" fill="currentColor" />
+          <rect x="80" y="10" width="50" height="50" rx="4" fill="none" stroke="currentColor" strokeWidth="3" />
+          <rect x="90" y="20" width="30" height="30" rx="2" fill="currentColor" />
+          <rect x="10" y="80" width="50" height="50" rx="4" fill="none" stroke="currentColor" strokeWidth="3" />
+          <rect x="20" y="90" width="30" height="30" rx="2" fill="currentColor" />
+          <rect x="80" y="80" width="8" height="8" fill="currentColor" />
+          <rect x="92" y="80" width="8" height="8" fill="currentColor" />
+          <rect x="104" y="80" width="8" height="8" fill="currentColor" />
+          <rect x="116" y="80" width="8" height="8" fill="currentColor" />
+          <rect x="80" y="92" width="8" height="8" fill="currentColor" />
+          <rect x="104" y="92" width="8" height="8" fill="currentColor" />
+          <rect x="80" y="104" width="8" height="8" fill="currentColor" />
+          <rect x="92" y="104" width="8" height="8" fill="currentColor" />
+          <rect x="116" y="104" width="8" height="8" fill="currentColor" />
+          <rect x="80" y="116" width="8" height="8" fill="currentColor" />
+          <rect x="104" y="116" width="8" height="8" fill="currentColor" />
+          <rect x="116" y="116" width="8" height="8" fill="currentColor" />
+          <rect x="68" y="10" width="4" height="4" fill="currentColor" />
+          <rect x="68" y="18" width="4" height="8" fill="currentColor" />
+          <rect x="68" y="30" width="4" height="4" fill="currentColor" />
+          <rect x="68" y="38" width="4" height="16" fill="currentColor" />
+          <rect x="68" y="58" width="4" height="4" fill="currentColor" />
+          <rect x="68" y="66" width="4" height="8" fill="currentColor" />
+        </svg>
+      </Box>
 
-      <Box sx={{ textAlign: 'center' }}>
-        <Typography fontSize={11} color="text.secondary" mb={0.5} textTransform="uppercase" letterSpacing={0.6}>
-          Hash TOTP
+      <Box sx={{ width: '100%', textAlign: 'center' }}>
+        <Typography fontSize={11} color="text.secondary" mb={0.75} textTransform="uppercase" letterSpacing={0.8}>
+          Código de validación
         </Typography>
-        <Typography
-          variant="body2"
+
+        <Box
           sx={{
-            fontFamily: 'monospace',
-            fontSize: 18,
-            fontWeight: 600,
-            letterSpacing: 1.5,
-            wordBreak: 'break-word',
-            lineHeight: 1.3,
+            px: 1.5,
+            py: 1,
+            borderRadius: 1.5,
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
           }}
         >
-          {hash || 'Generando...'}
-        </Typography>
+          <Typography
+            sx={{
+              fontFamily: 'monospace',
+              fontSize: 17,
+              fontWeight: 700,
+              letterSpacing: 1.6,
+              wordBreak: 'break-all',
+              lineHeight: 1.35,
+            }}
+          >
+            {hash || 'Generando...'}
+          </Typography>
+        </Box>
       </Box>
     </Stack>
   );
@@ -169,71 +195,121 @@ function ModalQR({ open, entrada, onClose }) {
       fullWidth
       PaperProps={{
         elevation: 0,
-        sx: { border: '0.5px solid', borderColor: 'divider', borderRadius: 2 },
+        sx: {
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 3,
+          overflow: 'hidden',
+        },
       }}
     >
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-        <Typography fontWeight={500} fontSize={15}>Tu entrada</Typography>
-        <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
-      </DialogTitle>
-
-      <DialogContent sx={{ pt: 0 }}>
-        <Box sx={{
-          bgcolor: 'background.default', borderRadius: 2,
-          p: 2, display: 'flex', justifyContent: 'center', mb: 2,
-          color: 'text.primary',
-        }}>
-          {loading ? <CircularProgress size={32} /> : <QRCode hash={hash} size={160} />}
+      <DialogTitle
+        sx={{
+          px: 2.25,
+          py: 1.75,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Box>
+          <Typography fontWeight={600} fontSize={16}>
+            Tu entrada
+          </Typography>
+          <Typography fontSize={12} color="text.secondary">
+            Mostrá este código al funcionario
+          </Typography>
         </Box>
 
-        <Box textAlign="center" mb={1.5}>
-          <Typography fontWeight={500} fontSize={14} mb={0.25}>{titulo}</Typography>
-          <Typography fontSize={12} color="text.secondary">
-            {entrada.estadio} · Sector {entrada.codigo_sector}
-          </Typography>
-          {fecha && (
-            <Typography fontSize={12} color="text.secondary">
-              {fecha}{hora ? ` · ${hora} hs` : ''}
-            </Typography>
+        <IconButton size="small" onClick={onClose}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
+
+      <DialogContent sx={{ p: 2.25 }}>
+        <Box
+          sx={{
+            bgcolor: '#F7F8FA',
+            borderRadius: 2.5,
+            p: 2,
+            mb: 2,
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          {loading ? (
+            <Box sx={{ height: 210, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CircularProgress size={30} />
+            </Box>
+          ) : (
+            <QRCode hash={hash} size={132} />
           )}
         </Box>
 
-        <Stack direction="row" alignItems="center" gap={1} mb={2}>
-          <RefreshIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
-          <Typography fontSize={12} color="text.disabled" minWidth={120}>
-            Se regenera en {segundos}s
+        <Box
+          sx={{
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            p: 1.5,
+            mb: 1.5,
+          }}
+        >
+          <Typography fontWeight={600} fontSize={14} mb={0.75}>
+            {titulo}
           </Typography>
+
+          <Stack gap={0.4}>
+            <Typography fontSize={12.5} color="text.secondary">
+              {entrada.estadio} · Sector {entrada.codigo_sector}
+            </Typography>
+
+            {fecha && (
+              <Typography fontSize={12.5} color="text.secondary">
+                {fecha}{hora ? ` · ${hora} hs` : ''}
+              </Typography>
+            )}
+          </Stack>
+        </Box>
+
+        <Box
+          sx={{
+            borderRadius: 2,
+            bgcolor: '#F8FAFC',
+            border: '1px solid',
+            borderColor: 'divider',
+            p: 1.25,
+          }}
+        >
+          <Stack direction="row" alignItems="center" justifyContent="space-between" mb={0.8}>
+            <Stack direction="row" alignItems="center" gap={0.75}>
+              <RefreshIcon sx={{ fontSize: 15, color: 'text.secondary' }} />
+              <Typography fontSize={12.5} color="text.secondary">
+                Se regenera en
+              </Typography>
+            </Stack>
+
+            <Typography fontWeight={700} fontSize={13}>
+              {segundos}s
+            </Typography>
+          </Stack>
+
           <LinearProgress
             variant="determinate"
             value={progreso}
             sx={{
-              flex: 1, height: 3, borderRadius: 2,
+              height: 5,
+              borderRadius: 5,
               bgcolor: 'divider',
-              '& .MuiLinearProgress-bar': { bgcolor: 'secondary.main', borderRadius: 2 },
+              '& .MuiLinearProgress-bar': {
+                bgcolor: segundos <= 5 ? 'error.main' : 'secondary.main',
+                borderRadius: 5,
+              },
             }}
           />
-        </Stack>
-
-        <Divider sx={{ mb: 1.5 }} />
-
-        <Button
-          fullWidth
-          variant="outlined"
-          startIcon={<DownloadIcon />}
-          sx={{ fontSize: 13 }}
-          onClick={() => {
-            const payload = JSON.stringify({ hash, id_entrada: entrada.id_entrada });
-            const blob = new Blob([payload], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `entrada-${entrada.id_entrada}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-          }}
-        >
-          Descargar entrada
-        </Button>
+        </Box>
       </DialogContent>
     </Dialog>
   );
