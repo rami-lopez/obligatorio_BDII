@@ -134,7 +134,7 @@ BEGIN
     IF NEW.estado = 'aceptada' AND OLD.estado = 'pendiente' THEN
         UPDATE entrada
         SET mail_propietario = NEW.mail_destino,
-            estado           = 'transferida'
+            estado           = 'activa'
         WHERE id_entrada = NEW.id_entrada;
     END IF;
 END$$

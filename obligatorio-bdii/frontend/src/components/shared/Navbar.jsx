@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar, Toolbar, Box, Typography, InputBase,
@@ -9,18 +9,28 @@ import SearchIcon from '@mui/icons-material/Search';
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 import { useAuth } from '../../hooks/useAuth';
+import { listarNotificaciones } from '../../api/notificaciones';
 
-// Mock de notificaciones — reemplazar con fetch al backend
-const MOCK_NOTIFS = [
-  {
-    id: 1,
-    tipo: 'transferencia',
-    mensaje: 'Carlos M. te transfirió una entrada para Brasil vs. Uruguay',
-    leida: false,
-    fecha: 'Hace 5 min',
-  },
-];
+const ICONO_POR_TIPO = {
+  transferencia_recibida:  <SwapHorizIcon fontSize="small" sx={{ color: 'secondary.main' }} />,
+  transferencia_aceptada:  <CheckCircleIcon fontSize="small" sx={{ color: '#3B6D11' }} />,
+  transferencia_rechazada: <CancelIcon fontSize="small" sx={{ color: '#791F1F' }} />,
+};
+
+function formatearTiempo(fecha_creacion) {
+  if (!fecha_creacion) return '';
+  const diff = Date.now() - new Date(fecha_creacion).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return 'Ahora';
+  if (min < 60) return `Hace ${min} min`;
+  const hrs = Math.floor(min / 60);
+  if (hrs < 24) return `Hace ${hrs} h`;
+  const dias = Math.floor(hrs / 24);
+  return `Hace ${dias} d`;
+}
 
 function Navbar() {
   const navigate = useNavigate();
@@ -28,8 +38,23 @@ function Navbar() {
   const { perfil, user, logout, isAuthenticated } = useAuth();
   const [search, setSearch] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
-  const [notifs, setNotifs] = useState(MOCK_NOTIFS);
+  const [notifs, setNotifs] = useState([]);
   const [avatarAnchor, setAvatarAnchor] = useState(null);
+  const intervalRef = useRef(null);
+
+  const fetchNotifs = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const data = await listarNotificaciones();
+      setNotifs(data);
+    } catch { /* ignore */ }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    fetchNotifs();
+    intervalRef.current = setInterval(fetchNotifs, 15000);
+    return () => clearInterval(intervalRef.current);
+  }, [fetchNotifs]);
 
   const unread = notifs.filter(n => !n.leida).length;
 
@@ -39,7 +64,6 @@ function Navbar() {
 
   const handleBellClick = (e) => {
     setAnchorEl(e.currentTarget);
-    setNotifs(prev => prev.map(n => ({ ...n, leida: true })));
   };
 
   const handleBellClose = () => setAnchorEl(null);
@@ -157,7 +181,7 @@ function Navbar() {
           ) : (
             <List disablePadding>
               {notifs.map((n, i) => (
-                <React.Fragment key={n.id}>
+                <React.Fragment key={n.id_notificacion}>
                   <ListItem
                     alignItems="flex-start"
                     sx={{
@@ -168,11 +192,11 @@ function Navbar() {
                     onClick={() => { handleBellClose(); navigate('/transferencias'); }}
                   >
                     <ListItemIcon sx={{ minWidth: 36, mt: 0.25 }}>
-                      <SwapHorizIcon fontSize="small" sx={{ color: 'secondary.main' }} />
+                      {ICONO_POR_TIPO[n.tipo] || <SwapHorizIcon fontSize="small" sx={{ color: 'secondary.main' }} />}
                     </ListItemIcon>
                     <ListItemText
                       primary={<Typography fontSize={13}>{n.mensaje}</Typography>}
-                      secondary={<Typography fontSize={11} color="text.disabled">{n.fecha}</Typography>}
+                      secondary={<Typography fontSize={11} color="text.disabled">{formatearTiempo(n.fecha_creacion)}</Typography>}
                     />
                   </ListItem>
                   {i < notifs.length - 1 && <Divider />}

@@ -1,23 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Box, Typography, Chip, Grid, Card, CardContent,
-  CardActions, Button, Stack, Alert,
+  Box, Typography, Chip, Grid, Card,
+  Button, Stack, Alert, Popover, ListItem, ListItemText,
 } from '@mui/material';
 import PlaceIcon from '@mui/icons-material/Place';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import { listarEventos } from '../../api/eventos';
 import { useAuth } from '../../hooks/useAuth';
-
-const FASES = ['Todos', 'Fase de grupos', 'Octavos', 'Cuartos', 'Semifinal', 'Final'];
 
 function EventoCardChico({ evento, onClick }) {
   const fechaStr = evento.fecha_hora
     ? new Date(evento.fecha_hora).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
     : '';
-
   return (
     <Card
       elevation={0}
@@ -38,6 +34,9 @@ function EventoCardChico({ evento, onClick }) {
         <Typography fontSize={12} color="text.secondary" display="flex" alignItems="center" gap={0.4}>
           <CalendarTodayIcon sx={{ fontSize: 12 }} />{fechaStr}
         </Typography>
+        <Typography fontSize={11} color="text.disabled" mt={0.25}>
+          {evento.estadio_nombre}
+        </Typography>
       </Box>
     </Card>
   );
@@ -47,7 +46,10 @@ function Catalogo() {
   const navigate = useNavigate();
   const { tokenListo } = useAuth();
   const [searchParams] = useSearchParams();
-  const [faseActiva, setFaseActiva] = useState('Todos');
+  const [sedeActiva, setSedeActiva] = useState(null);
+  const [estadioActivo, setEstadioActivo] = useState(null);
+  const [sedeAnchor, setSedeAnchor] = useState(null);
+  const [estadioAnchor, setEstadioAnchor] = useState(null);
   const [eventos, setEventos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
@@ -74,22 +76,142 @@ function Catalogo() {
     cargar();
   }, [tokenListo, cargar]);
 
+  const sedes = useMemo(() => {
+    const map = new Map();
+    eventos.forEach(e => {
+      if (e.id_sede == null) return;
+      if (!map.has(e.id_sede)) {
+        map.set(e.id_sede, { id_sede: e.id_sede, pais: e.sede_pais, estadios: [] });
+      }
+      if (e.estadio_nombre && !map.get(e.id_sede).estadios.includes(e.estadio_nombre)) {
+        map.get(e.id_sede).estadios.push(e.estadio_nombre);
+      }
+    });
+    return [...map.values()];
+  }, [eventos]);
+
+  const estadiosVisibles = useMemo(() => {
+    if (sedeActiva) {
+      const sede = sedes.find(s => s.id_sede === sedeActiva);
+      return sede ? sede.estadios.sort() : [];
+    }
+    return [...new Set(eventos.map(e => e.estadio_nombre).filter(Boolean))].sort();
+  }, [sedes, sedeActiva, eventos]);
+
   const filtrados = eventos.filter(e => {
-    const nom = `${e.equipo_local} ${e.equipo_visitante || ''}`.toLowerCase();
-    return !q || nom.includes(q);
+    if (q) {
+      const nom = `${e.equipo_local} ${e.equipo_visitante || ''}`.toLowerCase();
+      if (!nom.includes(q)) return false;
+    }
+    if (sedeActiva && e.id_sede !== sedeActiva) return false;
+    if (estadioActivo && e.estadio_nombre !== estadioActivo) return false;
+    return true;
   });
 
-  if (cargando) {
-    return (
-      <Box sx={{ p: 6, textAlign: 'center', color: 'text.disabled' }}>
-        <Typography>Cargando eventos...</Typography>
-      </Box>
-    );
-  }
+  return (
+    <Box sx={{ px: { xs: 2, md: 3 }, py: 3, maxWidth: 1200, mx: 'auto' }}>
 
-  if (error) {
-    return (
-      <Box sx={{ px: { xs: 2, md: 3 }, py: 3, maxWidth: 1200, mx: 'auto' }}>
+      <Stack direction="row" gap={1} mb={3} flexWrap="wrap" alignItems="center">
+        <Chip
+          icon={<PlaceIcon sx={{ fontSize: '14px !important' }} />}
+          label={sedeActiva ? sedes.find(s => s.id_sede === sedeActiva)?.pais : 'Sede'}
+          variant="outlined"
+          onClick={(e) => setSedeAnchor(e.currentTarget)}
+          onDelete={sedeActiva ? () => { setSedeActiva(null); setEstadioActivo(null); } : undefined}
+          sx={{
+            fontSize: 13, height: 32, borderRadius: 3, cursor: 'pointer',
+            borderColor: sedeActiva ? 'primary.main' : 'divider',
+            color: sedeActiva ? 'primary.main' : 'text.secondary',
+            bgcolor: sedeActiva ? '#E6F1FB' : 'transparent',
+          }}
+        />
+        <Chip
+          label={estadioActivo || 'Estadio'}
+          variant="outlined"
+          onClick={(e) => setEstadioAnchor(e.currentTarget)}
+          onDelete={estadioActivo ? () => setEstadioActivo(null) : undefined}
+          sx={{
+            fontSize: 13, height: 32, borderRadius: 3, cursor: 'pointer',
+            borderColor: estadioActivo ? 'primary.main' : 'divider',
+            color: estadioActivo ? 'primary.main' : 'text.secondary',
+            bgcolor: estadioActivo ? '#E6F1FB' : 'transparent',
+          }}
+        />
+      </Stack>
+
+      <Popover
+        open={Boolean(sedeAnchor)}
+        anchorEl={sedeAnchor}
+        onClose={() => setSedeAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        PaperProps={{
+          elevation: 0,
+          sx: { mt: 0.5, width: 200, border: '0.5px solid', borderColor: 'divider', borderRadius: 2, maxHeight: 320 },
+        }}
+      >
+        {sedes.map(sede => (
+          <ListItem
+            key={sede.id_sede}
+            dense
+            onClick={() => {
+              setSedeActiva(sedeActiva === sede.id_sede ? null : sede.id_sede);
+              setEstadioActivo(null);
+              setSedeAnchor(null);
+            }}
+            sx={{
+              cursor: 'pointer',
+              bgcolor: sedeActiva === sede.id_sede ? '#E6F1FB' : 'transparent',
+              '&:hover': { bgcolor: 'action.hover' },
+            }}
+          >
+            <ListItemText
+              primary={<Typography fontSize={13} fontWeight={sedeActiva === sede.id_sede ? 600 : 400}>{sede.pais}</Typography>}
+            />
+          </ListItem>
+        ))}
+        {sedes.length === 0 && (
+          <Box sx={{ px: 2, py: 2, fontSize: 13, color: 'text.disabled', textAlign: 'center' }}>
+            No hay sedes disponibles
+          </Box>
+        )}
+      </Popover>
+
+      <Popover
+        open={Boolean(estadioAnchor)}
+        anchorEl={estadioAnchor}
+        onClose={() => setEstadioAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        PaperProps={{
+          elevation: 0,
+          sx: { mt: 0.5, width: 260, border: '0.5px solid', borderColor: 'divider', borderRadius: 2, maxHeight: 320 },
+        }}
+      >
+        {estadiosVisibles.map(est => (
+          <ListItem
+            key={est}
+            dense
+            onClick={() => { setEstadioActivo(estadioActivo === est ? null : est); setEstadioAnchor(null); }}
+            sx={{
+              cursor: 'pointer',
+              bgcolor: estadioActivo === est ? '#E6F1FB' : 'transparent',
+              '&:hover': { bgcolor: 'action.hover' },
+            }}
+          >
+            <ListItemText
+              primary={<Typography fontSize={13} fontWeight={estadioActivo === est ? 600 : 400}>{est}</Typography>}
+            />
+          </ListItem>
+        ))}
+        {estadiosVisibles.length === 0 && (
+          <Box sx={{ px: 2, py: 2, fontSize: 13, color: 'text.disabled', textAlign: 'center' }}>
+            No hay estadios disponibles
+          </Box>
+        )}
+      </Popover>
+
+      {error && (
         <Alert
           severity="error"
           action={
@@ -101,48 +223,25 @@ function Catalogo() {
         >
           {error}
         </Alert>
-      </Box>
-    );
-  }
+      )}
 
-  return (
-    <Box sx={{ px: { xs: 2, md: 3 }, py: 3, maxWidth: 1200, mx: 'auto' }}>
+      {eventos.length > 0 && (
+        <Box sx={{ mb: 2 }}>
+          <Typography fontSize={11} color="text.disabled">
+            {filtrados.length} de {eventos.length} eventos
+            {q && ` · buscando "${q}"`}
+            {sedeActiva && ` · ${sedes.find(s => s.id_sede === sedeActiva)?.pais}`}
+            {estadioActivo && ` · ${estadioActivo}`}
+          </Typography>
+        </Box>
+      )}
 
-      <Stack direction="row" gap={1} mb={3} flexWrap="wrap" alignItems="center">
-        {FASES.map(fase => (
-          <Chip
-            key={fase}
-            label={fase}
-            onClick={() => setFaseActiva(fase)}
-            sx={{
-              fontSize: 13, height: 32, borderRadius: 3, cursor: 'pointer',
-              bgcolor: faseActiva === fase ? 'primary.main' : 'background.paper',
-              color: faseActiva === fase ? '#B5D4F4' : 'text.secondary',
-              border: '0.5px solid',
-              borderColor: faseActiva === fase ? 'primary.main' : 'divider',
-              '&:hover': {
-                bgcolor: faseActiva === fase ? 'primary.dark' : 'action.hover',
-              },
-            }}
-          />
-        ))}
-        <Box sx={{ width: '0.5px', height: 20, bgcolor: 'divider', mx: 0.5 }} />
-        <Chip
-          icon={<FilterAltIcon sx={{ fontSize: '14px !important' }} />}
-          label="Sede"
-          variant="outlined"
-          sx={{ fontSize: 13, height: 32, borderRadius: 3, cursor: 'pointer', borderColor: 'divider' }}
-        />
-        <Chip
-          icon={<CalendarTodayIcon sx={{ fontSize: '13px !important' }} />}
-          label="Fecha"
-          variant="outlined"
-          sx={{ fontSize: 13, height: 32, borderRadius: 3, cursor: 'pointer', borderColor: 'divider' }}
-        />
-      </Stack>
-
-      {filtrados.length > 0 && (
-        <>
+      {cargando ? (
+        <Box sx={{ textAlign: 'center', py: 6, color: 'text.disabled' }}>
+          <Typography>Cargando eventos...</Typography>
+        </Box>
+      ) : filtrados.length > 0 ? (
+        <Box>
           <Typography fontSize={12} fontWeight={500} color="text.secondary"
             textTransform="uppercase" letterSpacing={0.5} mb={1.5}>
             Eventos
@@ -154,10 +253,8 @@ function Catalogo() {
               </Grid>
             ))}
           </Grid>
-        </>
-      )}
-
-      {filtrados.length === 0 && !cargando && (
+        </Box>
+      ) : (
         <Box sx={{ textAlign: 'center', py: 6, color: 'text.disabled' }}>
           <Typography fontSize={14}>No se encontraron eventos</Typography>
         </Box>

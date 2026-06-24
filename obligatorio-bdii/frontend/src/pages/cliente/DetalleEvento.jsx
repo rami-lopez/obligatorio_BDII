@@ -14,7 +14,7 @@ import TouchAppIcon from '@mui/icons-material/TouchApp';
 import { getEvento, getSectoresEvento } from '../../api/eventos';
 import EstadioSVGBase, { SECTOR_NOMBRES } from '../../components/shared/EstadioSVGBase';
 
-const MAX_POR_COMPRA = 8;
+const MAX_POR_COMPRA = 5;
 
 function PanelSector({ sector, cantidad, onMenos, onMas, onContinuar }) {
   if (!sector) {
@@ -210,6 +210,7 @@ function DetalleEvento() {
             sectores={sectores}
             selectedSectorId={sectorSeleccionado?.codigo}
             onSectorClick={handleSectorClick}
+            pathSectorResolver={(index) => sectores[index] || null}
           />
         </Box>
 

@@ -9,10 +9,13 @@ async def crear_transferencia(
     entrada = await fetch_one(
         """
         SELECT
-            mail_propietario,
-            estado
-        FROM entrada
-        WHERE id_entrada = %s
+            e.mail_propietario,
+            e.estado,
+            ev.equipo_local,
+            ev.equipo_visitante
+        FROM entrada e
+        JOIN evento ev ON ev.id_evento = e.id_evento
+        WHERE e.id_entrada = %s
         """,
         (id_entrada,)
     )
@@ -83,15 +86,49 @@ async def crear_transferencia(
         """,
         (
             id_entrada,
-            mail_origen,
-            mail_destino,
+            mail_origen.lower(),
+            mail_destino.lower(),
             transferencias["cantidad"] + 1,
         )
+    )
+
+    await execute(
+        "UPDATE entrada SET estado = 'transferida' WHERE id_entrada = %s",
+        (id_entrada,)
     )
 
     return {
         "message": "Transferencia creada correctamente"
     }
+
+
+async def listar_transferencias(mail_usuario: str):
+    return await fetch_all(
+        """
+        SELECT
+            t.id_transferencia,
+            t.mail_origen,
+            t.mail_destino,
+            t.fecha_solicitud,
+            t.fecha_aceptacion,
+            t.estado,
+            t.nro_orden,
+            t.id_entrada,
+            e.id_evento,
+            e.codigo_sector,
+            ev.equipo_local,
+            ev.equipo_visitante,
+            ev.fecha_hora,
+            es.nombre AS estadio
+        FROM transferencia t
+        JOIN entrada e ON e.id_entrada = t.id_entrada
+        JOIN evento ev ON ev.id_evento = e.id_evento
+        JOIN estadio es ON es.id_estadio = e.id_estadio
+        WHERE t.mail_origen = %s OR t.mail_destino = %s
+        ORDER BY t.fecha_solicitud DESC
+        """,
+        (mail_usuario, mail_usuario)
+    )
 
 
 async def obtener_transferencias_pendientes(mail_usuario: str):
@@ -121,11 +158,16 @@ async def aceptar_transferencia(
     transferencia = await fetch_one(
         """
         SELECT
-            id_entrada,
-            mail_destino,
-            estado
-        FROM transferencia
-        WHERE id_transferencia = %s
+            t.id_entrada,
+            t.mail_origen,
+            t.mail_destino,
+            t.estado,
+            ev.equipo_local,
+            ev.equipo_visitante
+        FROM transferencia t
+        JOIN entrada e ON e.id_entrada = t.id_entrada
+        JOIN evento ev ON ev.id_evento = e.id_evento
+        WHERE t.id_transferencia = %s
         """,
         (id_transferencia,)
     )
@@ -184,10 +226,16 @@ async def rechazar_transferencia(
     transferencia = await fetch_one(
         """
         SELECT
-            mail_destino,
-            estado
-        FROM transferencia
-        WHERE id_transferencia = %s
+            t.id_entrada,
+            t.mail_origen,
+            t.mail_destino,
+            t.estado,
+            ev.equipo_local,
+            ev.equipo_visitante
+        FROM transferencia t
+        JOIN entrada e ON e.id_entrada = t.id_entrada
+        JOIN evento ev ON ev.id_evento = e.id_evento
+        WHERE t.id_transferencia = %s
         """,
         (id_transferencia,)
     )
@@ -217,6 +265,11 @@ async def rechazar_transferencia(
         WHERE id_transferencia = %s
         """,
         (id_transferencia,)
+    )
+
+    await execute(
+        "UPDATE entrada SET estado = 'activa' WHERE id_entrada = %s",
+        (transferencia["id_entrada"],)
     )
 
     return {

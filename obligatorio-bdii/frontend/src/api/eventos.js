@@ -1,7 +1,7 @@
 import client from './client';
 
-export const listarEventos = () =>
-  client.get('/eventos/').then(r => r.data);
+export const listarEventos = (params = {}) =>
+  client.get('/eventos/', { params }).then(r => r.data);
 
 export const getEvento = (id) =>
   client.get(`/eventos/${id}`).then(r => r.data);

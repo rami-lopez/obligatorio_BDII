@@ -1,5 +1,8 @@
 import client from './client';
 
+export const listarEntradas = () =>
+  client.get('/entradas/').then(r => r.data);
+
 export const getEntrada = (id) =>
   client.get(`/entradas/${id}`).then(r => r.data);
 

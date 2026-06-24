@@ -13,6 +13,10 @@ class EventBase(BaseModel):
 class EventResponse(EventBase):
     id_evento:        int
     mail_admin:       str
+    estadio_nombre:   str | None = None
+    estadio_ciudad:   str | None = None
+    id_sede:          int | None = None
+    sede_pais:        str | None = None
 
     class Config:
         from_attributes = True

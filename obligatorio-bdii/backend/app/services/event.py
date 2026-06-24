@@ -7,12 +7,30 @@ async def get_evento(id_evento: int) -> list | None:
         (id_evento,),
     )
 
-async def get_eventos(id_sede: int | None = None) -> list:
-    query = "SELECT ev.* FROM evento ev"
+async def get_eventos(
+    id_sede_filter: int | None = None,
+    estadio_nombre: str | None = None,
+) -> list:
+    query = """
+        SELECT
+            ev.*,
+            es.nombre AS estadio_nombre,
+            es.ciudad AS estadio_ciudad,
+            es.id_sede,
+            sd.pais AS sede_pais
+        FROM evento ev
+        JOIN estadio es ON es.id_estadio = ev.id_estadio
+        JOIN sede sd ON sd.id_sede = es.id_sede
+        WHERE 1=1
+    """
     params = []
-    if id_sede is not None:
-        query += " JOIN estadio e ON ev.id_estadio = e.id_estadio WHERE e.id_sede = %s"
-        params.append(id_sede)
+    if id_sede_filter is not None:
+        query += " AND es.id_sede = %s"
+        params.append(id_sede_filter)
+    if estadio_nombre:
+        query += " AND es.nombre = %s"
+        params.append(estadio_nombre)
+    query += " ORDER BY ev.fecha_hora"
     return await fetch_all(query, tuple(params))
 
 async def get_sectores_evento(id_evento: int) -> list | None:

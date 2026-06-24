@@ -2,9 +2,14 @@ from fastapi import APIRouter, Depends
 
 from app.db.dependencies import get_current_user
 from app.schemas.transferencia import TransferenciaCreate
-from app.services.transferencia import aceptar_transferencia, crear_transferencia, obtener_transferencias_pendientes, rechazar_transferencia
+from app.services.transferencia import aceptar_transferencia, crear_transferencia, listar_transferencias, obtener_transferencias_pendientes, rechazar_transferencia
 
 router = APIRouter(prefix="/transferencias", tags=["Transferencias"])
+
+
+@router.get("/")
+async def listar(current_user: dict = Depends(get_current_user)):
+    return await listar_transferencias(current_user["mail"])
 
 
 @router.post("/")

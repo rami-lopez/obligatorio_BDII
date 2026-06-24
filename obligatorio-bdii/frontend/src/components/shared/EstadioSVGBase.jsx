@@ -60,7 +60,7 @@ export default function EstadioSVGBase({
           if (!sector) return null;
           const agotado = agotadoPredicate(sector);
           const colores = agotado ? TIPO_COLORES.Agotado : TIPO_COLORES.General;
-          const isSelected = selectedSectorId === sp.id;
+          const isSelected = selectedSectorId === sp.id || selectedSectorId === sector?.codigo;
           const customStyle = sectorStyle ? sectorStyle(sector, agotado, index) : {};
 
           return (

@@ -1,5 +1,8 @@
 import client from './client';
 
+export const listarTransferencias = () =>
+  client.get('/transferencias/').then(r => r.data);
+
 export const crearTransferencia = (data) =>
   client.post('/transferencias/', data).then(r => r.data);
 

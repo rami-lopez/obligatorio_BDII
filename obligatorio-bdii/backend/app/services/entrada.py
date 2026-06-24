@@ -132,7 +132,9 @@ async def listar_entradas(mail_usuario: str):
             ev.equipo_visitante,
             ev.fecha_hora,
             es.nombre AS estadio,
-            e.codigo_sector
+            es.ciudad,
+            e.codigo_sector,
+            (SELECT COUNT(*) FROM transferencia t WHERE t.id_entrada = e.id_entrada AND t.estado = 'aceptada') AS transferencias
         FROM entrada e
         JOIN evento ev
             ON e.id_evento = ev.id_evento

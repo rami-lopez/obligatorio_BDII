@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, Stack, Button, Chip, Tab, Tabs,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  IconButton, TextField, LinearProgress, Divider,
+  IconButton, TextField, LinearProgress, Divider, CircularProgress,
 } from '@mui/material';
 import PlaceIcon from '@mui/icons-material/Place';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -15,84 +15,22 @@ import DownloadIcon from '@mui/icons-material/Download';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import { listarEntradas, getQR } from '../../api/entradas';
+import { crearTransferencia } from '../../api/transferencias';
 
 const QR_SEGUNDOS = 30;
 const MAX_TRANSFERENCIAS = 3;
 
-// Mock — reemplazar con fetch a /api/entradas/mis-entradas
-const MOCK_ENTRADAS_ACTIVAS = [
-  {
-    id: 'E001',
-    evento: 'Argentina vs. México',
-    estadio: 'Estadio Azteca',
-    ciudad: 'Ciudad de México',
-    fecha: '14 jun 2026',
-    hora: '20:00',
-    sector: 'Tribuna Norte',
-    tipo: 'General',
-    numero: 'A-00421',
-    foto: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Estadio_Azteca_2015.jpg/800px-Estadio_Azteca_2015.jpg',
-    transferencias: 0,
-  },
-  {
-    id: 'E002',
-    evento: 'Argentina vs. México',
-    estadio: 'Estadio Azteca',
-    ciudad: 'Ciudad de México',
-    fecha: '14 jun 2026',
-    hora: '20:00',
-    sector: 'Tribuna Norte',
-    tipo: 'General',
-    numero: 'A-00422',
-    foto: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Estadio_Azteca_2015.jpg/800px-Estadio_Azteca_2015.jpg',
-    transferencias: 1,
-  },
-  {
-    id: 'E003',
-    evento: 'Brasil vs. Uruguay',
-    estadio: 'MetLife Stadium',
-    ciudad: 'Nueva York',
-    fecha: '1 jul 2026',
-    hora: '18:00',
-    sector: 'Lateral Este',
-    tipo: 'Preferencial',
-    numero: 'B-00104',
-    foto: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/MetLife_Stadium_-_aerial_crop.jpg/800px-MetLife_Stadium_-_aerial_crop.jpg',
-    transferencias: 2,
-  },
-];
+function formatearFecha(fecha_hora) {
+  if (!fecha_hora) return { fecha: '', hora: '' };
+  const d = new Date(fecha_hora);
+  return {
+    fecha: d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }),
+    hora: d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+  };
+}
 
-const MOCK_ENTRADAS_HISTORIAL = [
-  {
-    id: 'E004',
-    evento: 'España vs. Alemania',
-    estadio: 'AT&T Stadium',
-    ciudad: 'Dallas',
-    fecha: '18 jun 2026',
-    sector: 'Tribuna Sur',
-    tipo: 'General',
-    numero: 'C-00098',
-    foto: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/AT%26T_Stadium_-_Interior_2013.jpg/800px-AT%26T_Stadium_-_Interior_2013.jpg',
-    estado: 'consumida',
-    transferencias: 0,
-  },
-  {
-    id: 'E005',
-    evento: 'Francia vs. Polonia',
-    estadio: 'BC Place',
-    ciudad: 'Vancouver',
-    fecha: '20 jun 2026',
-    sector: 'Tribuna Norte',
-    tipo: 'General',
-    numero: 'D-00211',
-    foto: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/BC_Place_Vancouver_2011.jpg/800px-BC_Place_Vancouver_2011.jpg',
-    estado: 'transferida',
-    transferencias: 3,
-  },
-];
-
-// QR SVG esquemático — en producción se genera con una lib como qrcode.react
-function QRCode({ size = 140 }) {
+function QRCode({ hash, size = 140 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
       <rect width="140" height="140" fill="transparent" />
@@ -129,6 +67,7 @@ function EstadoPill({ estado }) {
     activa:      { label: 'Activa',      bg: '#EAF3DE', color: '#27500A', icon: <CheckCircleIcon sx={{ fontSize: 12 }} /> },
     consumida:   { label: 'Consumida',   bg: '#F5F5F5', color: '#757575', icon: <CancelOutlinedIcon sx={{ fontSize: 12 }} /> },
     transferida: { label: 'Transferida', bg: '#FAEEDA', color: '#633806', icon: <SwapHorizIcon sx={{ fontSize: 12 }} /> },
+    anulada:     { label: 'Anulada',     bg: '#F5F5F5', color: '#757575', icon: <CancelOutlinedIcon sx={{ fontSize: 12 }} /> },
   };
   const c = config[estado] || config.activa;
   return (
@@ -154,29 +93,48 @@ function TransferenciasChip({ cantidad }) {
   );
 }
 
-// Modal QR con temporizador de regeneración
 function ModalQR({ open, entrada, onClose }) {
+  const [hash, setHash] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [segundos, setSegundos] = useState(QR_SEGUNDOS);
   const intervalRef = useRef(null);
 
+  const cargarQR = useCallback(async () => {
+    if (!entrada) return;
+    setLoading(true);
+    try {
+      const data = await getQR(entrada.id_entrada);
+      setHash(data.hash_actual);
+    } catch {
+      setHash(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [entrada]);
+
   useEffect(() => {
     if (!open) return;
+    cargarQR();
     setSegundos(QR_SEGUNDOS);
     intervalRef.current = setInterval(() => {
       setSegundos(s => {
         if (s <= 1) {
-          // Aquí iría: fetch('/api/entradas/qr-token', { method: 'POST', body: entrada.id })
+          cargarQR();
           return QR_SEGUNDOS;
         }
         return s - 1;
       });
     }, 1000);
     return () => clearInterval(intervalRef.current);
-  }, [open, entrada]);
+  }, [open, entrada, cargarQR]);
 
   if (!entrada) return null;
 
+  const { fecha, hora } = formatearFecha(entrada.fecha_hora);
   const progreso = (segundos / QR_SEGUNDOS) * 100;
+  const titulo = entrada.equipo_visitante
+    ? `${entrada.equipo_local} vs. ${entrada.equipo_visitante}`
+    : entrada.equipo_local;
 
   return (
     <Dialog
@@ -195,24 +153,26 @@ function ModalQR({ open, entrada, onClose }) {
       </DialogTitle>
 
       <DialogContent sx={{ pt: 0 }}>
-        {/* QR */}
         <Box sx={{
           bgcolor: 'background.default', borderRadius: 2,
           p: 2, display: 'flex', justifyContent: 'center', mb: 2,
           color: 'text.primary',
         }}>
-          <QRCode size={160} />
+          {loading ? <CircularProgress size={32} /> : <QRCode hash={hash} size={160} />}
         </Box>
 
-        {/* Info */}
         <Box textAlign="center" mb={1.5}>
-          <Typography fontWeight={500} fontSize={14} mb={0.25}>{entrada.evento}</Typography>
+          <Typography fontWeight={500} fontSize={14} mb={0.25}>{titulo}</Typography>
           <Typography fontSize={12} color="text.secondary">
-            {entrada.sector} · {entrada.tipo} · Entrada #{entrada.numero}
+            {entrada.estadio} · Sector {entrada.codigo_sector}
           </Typography>
+          {fecha && (
+            <Typography fontSize={12} color="text.secondary">
+              {fecha}{hora ? ` · ${hora} hs` : ''}
+            </Typography>
+          )}
         </Box>
 
-        {/* Timer */}
         <Stack direction="row" alignItems="center" gap={1} mb={2}>
           <RefreshIcon sx={{ fontSize: 14, color: 'text.disabled' }} />
           <Typography fontSize={12} color="text.disabled" minWidth={120}>
@@ -237,8 +197,14 @@ function ModalQR({ open, entrada, onClose }) {
           startIcon={<DownloadIcon />}
           sx={{ fontSize: 13 }}
           onClick={() => {
-            // Reemplazar con lógica de descarga real
-            console.log('Descargar entrada', entrada.id);
+            const payload = JSON.stringify({ hash, id_entrada: entrada.id_entrada });
+            const blob = new Blob([payload], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `entrada-${entrada.id_entrada}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
           }}
         >
           Descargar entrada
@@ -248,11 +214,11 @@ function ModalQR({ open, entrada, onClose }) {
   );
 }
 
-// Modal de transferencia
 function ModalTransferir({ open, entrada, onClose, onEnviada }) {
   const [destinatario, setDestinatario] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!open) { setDestinatario(''); setMensaje(''); setError(''); }
@@ -262,11 +228,18 @@ function ModalTransferir({ open, entrada, onClose, onEnviada }) {
 
   const restantes = MAX_TRANSFERENCIAS - entrada.transferencias;
 
-  const handleEnviar = () => {
-    if (!destinatario.trim()) { setError('Ingresá el email o ID del destinatario'); return; }
-    // Reemplazar con: fetch('/api/transferencias', { method: 'POST', body: JSON.stringify({...}) })
-    onEnviada(entrada.id, destinatario);
-    onClose();
+  const handleEnviar = async () => {
+    if (!destinatario.trim()) { setError('Ingresá el email del destinatario'); return; }
+    setLoading(true);
+    try {
+      await crearTransferencia({ id_entrada: entrada.id_entrada, mail_destino: destinatario.trim() });
+      onEnviada(entrada.id_entrada);
+      onClose();
+    } catch (err) {
+      setError(err?.response?.data?.detail || 'Error al transferir');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -286,7 +259,6 @@ function ModalTransferir({ open, entrada, onClose, onEnviada }) {
       </DialogTitle>
 
       <DialogContent sx={{ pt: 0 }}>
-        {/* Advertencia */}
         <Box sx={{
           bgcolor: '#FAEEDA', border: '0.5px solid #F5C842',
           borderRadius: 1.5, p: 1.5, mb: 2,
@@ -302,7 +274,7 @@ function ModalTransferir({ open, entrada, onClose, onEnviada }) {
 
         <Stack gap={1.5}>
           <TextField
-            label="Email o ID del destinatario"
+            label="Email del destinatario"
             size="small"
             fullWidth
             value={destinatario}
@@ -323,15 +295,15 @@ function ModalTransferir({ open, entrada, onClose, onEnviada }) {
       </DialogContent>
 
       <DialogActions sx={{ px: 2, pb: 2, gap: 1 }}>
-        <Button variant="outlined" onClick={onClose} sx={{ fontSize: 13 }}>Cancelar</Button>
+        <Button variant="outlined" onClick={onClose} sx={{ fontSize: 13 }} disabled={loading}>Cancelar</Button>
         <Button
           variant="contained"
           onClick={handleEnviar}
-          disabled={restantes === 0}
+          disabled={restantes === 0 || loading}
           startIcon={<SendIcon />}
           sx={{ fontSize: 13 }}
         >
-          Enviar solicitud
+          {loading ? 'Enviando...' : 'Enviar solicitud'}
         </Button>
       </DialogActions>
     </Dialog>
@@ -339,31 +311,33 @@ function ModalTransferir({ open, entrada, onClose, onEnviada }) {
 }
 
 function EntradaCard({ entrada, activa, onVerQR, onTransferir }) {
+  const { fecha, hora } = formatearFecha(entrada.fecha_hora);
+  const titulo = entrada.equipo_visitante
+    ? `${entrada.equipo_local} vs. ${entrada.equipo_visitante}`
+    : entrada.equipo_local;
+
   return (
     <Box sx={{
       border: '0.5px solid', borderColor: 'divider', borderRadius: 2,
       overflow: 'hidden', bgcolor: 'background.paper',
       opacity: activa ? 1 : 0.65,
     }}>
-      <Box
-        component="img"
-        src={entrada.foto}
-        alt={entrada.estadio}
-        sx={{ width: '100%', height: 90, objectFit: 'cover', display: 'block' }}
-      />
+      <Box sx={{ height: 90, bgcolor: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography color="rgba(255,255,255,0.3)" fontSize={11}>Estadio {entrada.estadio}</Typography>
+      </Box>
       <Box sx={{ p: '10px 12px' }}>
         <Stack direction="row" alignItems="center" gap={1} mb={0.75}>
           <EstadoPill estado={activa ? 'activa' : entrada.estado} />
           {activa && <TransferenciasChip cantidad={entrada.transferencias} />}
         </Stack>
 
-        <Typography fontWeight={500} fontSize={13} mb={0.5}>{entrada.evento}</Typography>
+        <Typography fontWeight={500} fontSize={13} mb={0.5}>{titulo}</Typography>
         <Stack gap={0.25} mb={1}>
           <Typography fontSize={11} color="text.secondary" display="flex" alignItems="center" gap={0.4}>
-            <PlaceIcon sx={{ fontSize: 12 }} />{entrada.sector} · {entrada.tipo}
+            <PlaceIcon sx={{ fontSize: 12 }} />Sector {entrada.codigo_sector} · {entrada.estadio}
           </Typography>
           <Typography fontSize={11} color="text.secondary" display="flex" alignItems="center" gap={0.4}>
-            <CalendarTodayIcon sx={{ fontSize: 11 }} />{entrada.fecha}{entrada.hora ? ` · ${entrada.hora} hs` : ''}
+            <CalendarTodayIcon sx={{ fontSize: 11 }} />{fecha}{hora ? ` · ${hora} hs` : ''}
           </Typography>
         </Stack>
 
@@ -415,27 +389,51 @@ function EntradaCard({ entrada, activa, onVerQR, onTransferir }) {
 function MisEntradas() {
   const navigate = useNavigate();
   const [tab, setTab] = useState(0);
-  const [entradasActivas, setEntradasActivas] = useState(MOCK_ENTRADAS_ACTIVAS);
-  const [entradasHistorial] = useState(MOCK_ENTRADAS_HISTORIAL);
+  const [entradas, setEntradas] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [modalQR, setModalQR] = useState({ open: false, entrada: null });
   const [modalTransferir, setModalTransferir] = useState({ open: false, entrada: null });
 
-  // Reemplazar con fetch a /api/entradas/mis-entradas
-  useEffect(() => {
-    setEntradasActivas(MOCK_ENTRADAS_ACTIVAS);
+  const fetchEntradas = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await listarEntradas();
+      setEntradas(data);
+    } catch {
+      setEntradas([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const handleTransferenciaEnviada = (entradaId, destinatario) => {
-    // Actualiza el contador local — en producción el backend devuelve el estado actualizado
-    setEntradasActivas(prev =>
+  useEffect(() => {
+    fetchEntradas();
+  }, [fetchEntradas]);
+
+  const entradasActivas = entradas.filter(e => e.estado === 'activa');
+  const entradasHistorial = entradas.filter(e => e.estado !== 'activa');
+
+  const handleTransferenciaEnviada = (entradaId) => {
+    setEntradas(prev =>
       prev.map(e =>
-        e.id === entradaId
+        e.id_entrada === entradaId
           ? { ...e, transferencias: e.transferencias + 1 }
           : e
       )
     );
   };
+
+  if (loading) {
+    return (
+      <Box sx={{ maxWidth: 1000, mx: 'auto', px: { xs: 2, md: 3 }, py: 3 }}>
+        <Typography fontWeight={500} fontSize={18} mb={2.5}>Mis entradas</Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+          <CircularProgress size={28} />
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ maxWidth: 1000, mx: 'auto', px: { xs: 2, md: 3 }, py: 3 }}>
@@ -471,7 +469,7 @@ function MisEntradas() {
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }, gap: 1.75 }}>
             {entradasActivas.map(e => (
               <EntradaCard
-                key={e.id}
+                key={e.id_entrada}
                 entrada={e}
                 activa
                 onVerQR={entrada => setModalQR({ open: true, entrada })}
@@ -490,7 +488,7 @@ function MisEntradas() {
         ) : (
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }, gap: 1.75 }}>
             {entradasHistorial.map(e => (
-              <EntradaCard key={e.id} entrada={e} activa={false} />
+              <EntradaCard key={e.id_entrada} entrada={e} activa={false} />
             ))}
           </Box>
         )
