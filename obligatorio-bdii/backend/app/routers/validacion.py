@@ -43,7 +43,7 @@ async def validar_entrada(
 ):
     return await post_validar(
         validacion.id_entrada,
-        validacion.id_token,
+        validacion.hash_ingresado,
         validacion.identificador_disp,
         current_user["mail"],
     )
