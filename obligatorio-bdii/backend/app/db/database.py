@@ -30,7 +30,7 @@ async def init_pool() -> aiomysql.Pool:
 				db=settings.mysql_database,
 				minsize=settings.mysql_pool_min_size,
 				maxsize=settings.mysql_pool_max_size,
-				autocommit=False,
+				autocommit=True,
 				charset=settings.mysql_charset,
 			)
 		except Exception:

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Box, Typography, Stack, Button, Divider, Paper, Chip, Alert,
+  Box, Typography, Stack, Button, Divider, Paper, Chip, Alert, LinearProgress,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Stepper, Step, StepLabel, CircularProgress,
 } from '@mui/material';
@@ -41,6 +41,9 @@ function PasarelaPago() {
   const [accionando, setAccionando] = useState(false);
   const [error, setError] = useState('');
   const [resultado, setResultado] = useState(null);
+  const [tiempoRestante, setTiempoRestante] = useState(30);
+  const timerRef = useRef(null);
+  const accionTomada = useRef(false);
 
   useEffect(() => {
     if (!idVenta) { navigate('/'); return; }
@@ -53,7 +56,41 @@ function PasarelaPago() {
       .finally(() => setLoading(false));
   }, [idVenta, navigate]);
 
+  useEffect(() => {
+    if (resultado || venta?.estado !== 'pendiente') return;
+    accionTomada.current = false;
+    setTiempoRestante(30);
+    timerRef.current = setInterval(() => {
+      setTiempoRestante(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          if (!accionTomada.current) {
+            accionTomada.current = true;
+            anularPago(parseInt(idVenta))
+              .then(res => {
+                setVenta(prev => ({
+                  ...prev,
+                  estado: res.estado_venta,
+                  entradas: prev.entradas.map(e => ({ ...e, estado: res.estado_entradas })),
+                }));
+                setResultado('anulado');
+              })
+              .catch(err => {
+                setError(err?.response?.data?.detail || 'Error al anular pago');
+              });
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timerRef.current);
+  }, [venta?.estado === 'pendiente', resultado]);
+
   const handleConfirmar = async () => {
+    if (accionTomada.current) return;
+    accionTomada.current = true;
+    clearInterval(timerRef.current);
     setAccionando(true);
     setError('');
     try {
@@ -66,12 +103,16 @@ function PasarelaPago() {
       setResultado('confirmado');
     } catch (err) {
       setError(err?.response?.data?.detail || 'Error al confirmar pago');
+      accionTomada.current = false;
     } finally {
       setAccionando(false);
     }
   };
 
   const handleAnular = async () => {
+    if (accionTomada.current) return;
+    accionTomada.current = true;
+    clearInterval(timerRef.current);
     setAccionando(true);
     setError('');
     try {
@@ -84,6 +125,7 @@ function PasarelaPago() {
       setResultado('anulado');
     } catch (err) {
       setError(err?.response?.data?.detail || 'Error al anular pago');
+      accionTomada.current = false;
     } finally {
       setAccionando(false);
     }
@@ -191,9 +233,33 @@ function PasarelaPago() {
 
           {error && <Alert severity="error" sx={{ mt: 2, fontSize: 13 }}>{error}</Alert>}
 
+          {/* Timer */}
+          {!resultado && venta?.estado === 'pendiente' && (
+            <Box sx={{ mt: 2.5 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={0.5}>
+                <Typography fontSize={12} color="text.secondary">
+                  Tiempo restante para confirmar
+                </Typography>
+                <Typography
+                  fontSize={13}
+                  fontWeight={600}
+                  color={tiempoRestante <= 10 ? 'error.main' : 'text.secondary'}
+                >
+                  {tiempoRestante}s
+                </Typography>
+              </Stack>
+              <LinearProgress
+                variant="determinate"
+                value={(tiempoRestante / 30) * 100}
+                color={tiempoRestante <= 10 ? 'error' : 'primary'}
+                sx={{ height: 4, borderRadius: 2 }}
+              />
+            </Box>
+          )}
+
           {/* Acciones */}
           {!resultado && venta?.estado === 'pendiente' && (
-            <Stack direction="row" gap={2} mt={3} justifyContent="center">
+            <Stack direction="row" gap={2} mt={2} justifyContent="center">
               <Button
                 variant="contained"
                 color="success"
@@ -247,7 +313,9 @@ function PasarelaPago() {
               </Box>
               <Typography fontWeight={500} fontSize={18} mb={0.5}>Pago rechazado</Typography>
               <Typography fontSize={13} color="text.secondary" mb={2}>
-                La compra fue anulada. Las entradas quedaron marcadas como anuladas.
+                {tiempoRestante === 0
+                  ? 'El tiempo para confirmar el pago expiró. La compra fue anulada.'
+                  : 'La compra fue anulada. Las entradas quedaron marcadas como anuladas.'}
               </Typography>
               <Button variant="outlined" onClick={() => navigate('/')} sx={{ px: 3 }}>
                 Volver al catálogo
