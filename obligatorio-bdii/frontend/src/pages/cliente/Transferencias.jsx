@@ -278,15 +278,6 @@ function Transferencias() {
 
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2.5}>
         <Typography fontWeight={500} fontSize={18}>Transferencias</Typography>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<ConfirmationNumberIcon sx={{ fontSize: 14 }} />}
-          onClick={() => navigate('/mis-entradas')}
-          sx={{ fontSize: 12 }}
-        >
-          Ir a Mis entradas
-        </Button>
       </Stack>
 
       <Tabs

@@ -12,31 +12,90 @@ import { useAuth } from '../../hooks/useAuth';
 
 function EventoCardChico({ evento, onClick }) {
   const fechaStr = evento.fecha_hora
-    ? new Date(evento.fecha_hora).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+    ? new Date(evento.fecha_hora).toLocaleDateString('es-ES', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
     : '';
+
+  const titulo = evento.equipo_visitante
+    ? `${evento.equipo_local} vs. ${evento.equipo_visitante}`
+    : evento.equipo_local;
+
   return (
     <Card
       elevation={0}
       onClick={onClick}
       sx={{
-        border: '0.5px solid', borderColor: 'divider', borderRadius: 2,
-        cursor: 'pointer', overflow: 'hidden',
-        '&:hover': { borderColor: 'secondary.main' },
-        transition: 'border-color 0.15s',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 2.5,
+        cursor: 'pointer',
+        overflow: 'hidden',
+        bgcolor: 'background.paper',
+        transition: 'all 0.18s ease',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: '0 8px 22px rgba(15, 23, 42, 0.08)',
+          borderColor: '#B9D7EF',
+        },
       }}
     >
-      <Box sx={{ p: '12px 14px' }}>
-        <Typography fontWeight={500} fontSize={14} mb={0.75}>
-          {evento.equipo_visitante
-            ? `${evento.equipo_local} vs. ${evento.equipo_visitante}`
-            : evento.equipo_local}
-        </Typography>
-        <Typography fontSize={12} color="text.secondary" display="flex" alignItems="center" gap={0.4}>
-          <CalendarTodayIcon sx={{ fontSize: 12 }} />{fechaStr}
-        </Typography>
-        <Typography fontSize={11} color="text.disabled" mt={0.25}>
+      <Box
+        sx={{
+          height: 72,
+          background: 'linear-gradient(135deg, #E6F1FB 0%, #F7FAFC 100%)',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: 2,
+        }}
+      >
+        <Typography
+          fontSize={11}
+          color="primary.main"
+          fontWeight={700}
+          textTransform="uppercase"
+          letterSpacing={0.8}
+          textAlign="center"
+          noWrap
+          sx={{ maxWidth: '100%' }}
+        >
           {evento.estadio_nombre}
         </Typography>
+      </Box>
+
+      <Box sx={{ p: 1.75 }}>
+        <Typography fontWeight={700} fontSize={15} mb={1} lineHeight={1.25}>
+          {titulo}
+        </Typography>
+
+        <Stack gap={0.6}>
+          <Typography
+            fontSize={12}
+            color="text.secondary"
+            display="flex"
+            alignItems="center"
+            gap={0.5}
+          >
+            <CalendarTodayIcon sx={{ fontSize: 14 }} />
+            {fechaStr}
+          </Typography>
+
+          <Typography
+            fontSize={12}
+            color="text.secondary"
+            display="flex"
+            alignItems="center"
+            gap={0.5}
+          >
+            <PlaceIcon sx={{ fontSize: 14 }} />
+            {evento.estadio_nombre}
+          </Typography>
+        </Stack>
       </Box>
     </Card>
   );
@@ -227,7 +286,7 @@ function Catalogo() {
 
       {eventos.length > 0 && (
         <Box sx={{ mb: 2 }}>
-          <Typography fontSize={11} color="text.disabled">
+          <Typography fontSize={13} color="text.secondary" fontWeight={500}>
             {filtrados.length} de {eventos.length} eventos
             {q && ` · buscando "${q}"`}
             {sedeActiva && ` · ${sedes.find(s => s.id_sede === sedeActiva)?.pais}`}
@@ -242,9 +301,15 @@ function Catalogo() {
         </Box>
       ) : filtrados.length > 0 ? (
         <Box>
-          <Typography fontSize={12} fontWeight={500} color="text.secondary"
-            textTransform="uppercase" letterSpacing={0.5} mb={1.5}>
-            Eventos
+          <Typography
+            fontSize={12}
+            fontWeight={700}
+            color="text.secondary"
+            textTransform="uppercase"
+            letterSpacing={0.8}
+            mb={1.5}
+          >
+            Eventos disponibles
           </Typography>
           <Grid container spacing={1.75}>
             {filtrados.map(e => (
