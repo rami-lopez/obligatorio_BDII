@@ -21,8 +21,5 @@ class HistorialTransferenciaResponse(BaseModel):
     estado: str
 
 class QRResponse(BaseModel):
-    id_token: int
-    codigo_hash: str
-    generado_en: datetime
-    expira_en: datetime
-    activo: bool
+    hash_actual: str
+    id_entrada: int
