@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 
-from app.services.qr import generar_hash_qr
+from app.services.qr import generar_hash_qr, obtener_ttl_restante
 from app.db.database import fetch_one, fetch_all
 
 async def obtener_entrada(
@@ -115,10 +115,11 @@ async def obtener_qr_entrada(
         )
 
     hash_actual = generar_hash_qr(id_entrada)
+    ttl_restante = obtener_ttl_restante()
 
     return {
         "hash_actual": hash_actual,
-        "id_entrada": id_entrada,
+        "ttl_restante": ttl_restante,
     }
 
 async def listar_entradas(mail_usuario: str):

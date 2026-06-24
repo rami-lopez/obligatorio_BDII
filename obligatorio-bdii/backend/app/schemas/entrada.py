@@ -22,4 +22,4 @@ class HistorialTransferenciaResponse(BaseModel):
 
 class QRResponse(BaseModel):
     hash_actual: str
-    id_entrada: int
+    ttl_restante: int

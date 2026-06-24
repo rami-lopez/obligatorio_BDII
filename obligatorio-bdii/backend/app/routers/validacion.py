@@ -42,7 +42,6 @@ async def validar_entrada(
     current_user: dict = Depends(get_current_user),
 ):
     return await post_validar(
-        validacion.id_entrada,
         validacion.hash_ingresado,
         validacion.identificador_disp,
         current_user["mail"],

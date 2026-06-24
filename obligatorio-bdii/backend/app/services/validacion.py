@@ -32,55 +32,73 @@ async def get_dispositivos(mail_funcionario: str) -> list | None:
     )
 
 async def post_validar(
-    id_entrada: int,
     hash_ingresado: str,
     identificador_disp: str,
     mail_funcionario: str,
 ):
-    entrada = await fetch_one(
-        "SELECT id_entrada, estado, id_evento, codigo_sector FROM ticketing_mundial.entrada WHERE id_entrada = %s",
-        (id_entrada,),
-    )
-
-    if entrada is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Entrada no encontrada")
-
-    if entrada["estado"] == "consumida":
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La entrada ya fue utilizada")
-
-    # validamos el hash 
-    if not verificar_hash_qr(id_entrada, hash_ingresado):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Codigo QR inválido o expirado")
-
-    # validamos la asignacion del funcionario
-    asignacion = await fetch_one(
+    entradas = await fetch_all(
         """
-        SELECT 1 FROM ticketing_mundial.asignacion
-        WHERE id_evento = %s AND codigo_sector = %s AND mail_funcionario = %s
+        SELECT 
+            e.id_entrada,
+            e.estado,
+            e.id_evento,
+            e.codigo_sector
+        FROM ticketing_mundial.entrada e
+        JOIN ticketing_mundial.asignacion a
+            ON a.id_evento = e.id_evento
+            AND a.codigo_sector = e.codigo_sector
+        WHERE a.mail_funcionario = %s
+          AND e.estado <> 'consumida'
         """,
-        (entrada["id_evento"], entrada["codigo_sector"], mail_funcionario),
+        (mail_funcionario,),
     )
 
-    if asignacion is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tiene asignado ese sector")
+    coincidencias = []
 
-    # a partir de ahora guardamos el hash como registro histórico en token_qr
+    for entrada in entradas:
+        if verificar_hash_qr(entrada["id_entrada"], hash_ingresado):
+            coincidencias.append(entrada)
+
+    if len(coincidencias) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Código QR inválido, expirado o no pertenece a un sector asignado",
+        )
+
+    if len(coincidencias) > 1:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Código ambiguo. Hay más de una entrada posible. Reintente en unos segundos.",
+        )
+
+    entrada = coincidencias[0]
+    id_entrada = entrada["id_entrada"]
+
     async with transaction() as conn:
         async with conn.cursor() as cursor:
             await cursor.execute(
-                "INSERT INTO ticketing_mundial.token_qr (codigo_hash, generado_en, id_entrada) VALUES (%s, NOW(), %s)",
+                """
+                INSERT INTO ticketing_mundial.token_qr 
+                (codigo_hash, generado_en, id_entrada) 
+                VALUES (%s, NOW(), %s)
+                """,
                 (hash_ingresado, id_entrada),
             )
+
             await cursor.execute("SELECT LAST_INSERT_ID()")
             row = await cursor.fetchone()
             id_token = row[0]
 
             await cursor.execute(
                 """
-                INSERT INTO ticketing_mundial.validacion (mail_funcionario, identificador_disp, id_entrada, id_token)
+                INSERT INTO ticketing_mundial.validacion 
+                (mail_funcionario, identificador_disp, id_entrada, id_token)
                 VALUES (%s, %s, %s, %s)
                 """,
                 (mail_funcionario, identificador_disp, id_entrada, id_token),
             )
 
-    return {"mensaje": "Entrada validada correctamente"}
+    return {
+        "mensaje": "Entrada validada correctamente",
+        "id_entrada": id_entrada,
+    }

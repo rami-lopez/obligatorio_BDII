@@ -126,6 +126,7 @@ function ModalQR({ open, entrada, onClose }) {
     try {
       const data = await getQR(entrada.id_entrada);
       setHash(data.hash_actual);
+      setSegundos(data.ttl_restante ?? QR_SEGUNDOS);
     } catch {
       setHash(null);
     } finally {
@@ -135,17 +136,20 @@ function ModalQR({ open, entrada, onClose }) {
 
   useEffect(() => {
     if (!open) return;
+
     cargarQR();
-    setSegundos(QR_SEGUNDOS);
+
     intervalRef.current = setInterval(() => {
       setSegundos(s => {
         if (s <= 1) {
           cargarQR();
-          return QR_SEGUNDOS;
+          return 0;
         }
+
         return s - 1;
       });
     }, 1000);
+
     return () => clearInterval(intervalRef.current);
   }, [open, entrada, cargarQR]);
 

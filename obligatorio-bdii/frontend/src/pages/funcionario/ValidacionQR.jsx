@@ -160,7 +160,6 @@ function ValidacionQR() {
     setError('');
     try {
       const payload = {
-        id_entrada: Number(idEntrada),
         hash_ingresado: hashIngresado.trim(),
         identificador_disp: identificadorDisp.trim(),
       };

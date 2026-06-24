@@ -18,6 +18,5 @@ class DispositivoResponse (BaseModel):
         from_attributes = True
 
 class ValidacionCreate(BaseModel):
-    id_entrada: int
     hash_ingresado: str
     identificador_disp: str
