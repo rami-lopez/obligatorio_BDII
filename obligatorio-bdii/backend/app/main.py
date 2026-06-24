@@ -77,23 +77,16 @@ def custom_openapi() -> dict:
         routes=app.routes,
     )
 
-    auth0_domain = settings.auth0_domain.replace("https://", "").replace("http://", "").rstrip("/")
-
-    openapi_schema.setdefault("components", {}).setdefault("securitySchemes", {})["Auth0"] = {
-        "type": "oauth2",
-        "flows": {
-            "authorizationCode": {
-                "authorizationUrl": f"https://{auth0_domain}/authorize",
-                "tokenUrl": f"https://{auth0_domain}/oauth/token",
-                "scopes": {
-                    "openid": "openid",
-                    "profile": "Información del perfil",
-                    "email": "Correo electrónico",
-                },
-            }
-        },
+    openapi_schema.setdefault("components", {}).setdefault(
+        "securitySchemes", {}
+    )["BearerAuth"] = {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
     }
-    openapi_schema["security"] = [{"Auth0": ["openid", "profile", "email"]}]
+
+    openapi_schema["security"] = [{"BearerAuth": []}]
+
     return openapi_schema
 
 
