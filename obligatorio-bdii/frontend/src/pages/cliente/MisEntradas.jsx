@@ -32,33 +32,54 @@ function formatearFecha(fecha_hora) {
 
 function QRCode({ hash, size = 140 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
-      <rect width="140" height="140" fill="transparent" />
-      <rect x="10" y="10" width="50" height="50" rx="4" fill="none" stroke="currentColor" strokeWidth="3" />
-      <rect x="20" y="20" width="30" height="30" rx="2" fill="currentColor" />
-      <rect x="80" y="10" width="50" height="50" rx="4" fill="none" stroke="currentColor" strokeWidth="3" />
-      <rect x="90" y="20" width="30" height="30" rx="2" fill="currentColor" />
-      <rect x="10" y="80" width="50" height="50" rx="4" fill="none" stroke="currentColor" strokeWidth="3" />
-      <rect x="20" y="90" width="30" height="30" rx="2" fill="currentColor" />
-      <rect x="80" y="80" width="8" height="8" fill="currentColor" />
-      <rect x="92" y="80" width="8" height="8" fill="currentColor" />
-      <rect x="104" y="80" width="8" height="8" fill="currentColor" />
-      <rect x="116" y="80" width="8" height="8" fill="currentColor" />
-      <rect x="80" y="92" width="8" height="8" fill="currentColor" />
-      <rect x="104" y="92" width="8" height="8" fill="currentColor" />
-      <rect x="80" y="104" width="8" height="8" fill="currentColor" />
-      <rect x="92" y="104" width="8" height="8" fill="currentColor" />
-      <rect x="116" y="104" width="8" height="8" fill="currentColor" />
-      <rect x="80" y="116" width="8" height="8" fill="currentColor" />
-      <rect x="104" y="116" width="8" height="8" fill="currentColor" />
-      <rect x="116" y="116" width="8" height="8" fill="currentColor" />
-      <rect x="68" y="10" width="4" height="4" fill="currentColor" />
-      <rect x="68" y="18" width="4" height="8" fill="currentColor" />
-      <rect x="68" y="30" width="4" height="4" fill="currentColor" />
-      <rect x="68" y="38" width="4" height="16" fill="currentColor" />
-      <rect x="68" y="58" width="4" height="4" fill="currentColor" />
-      <rect x="68" y="66" width="4" height="8" fill="currentColor" />
-    </svg>
+    <Stack spacing={1.5} alignItems="center" sx={{ width: '100%' }}>
+      <svg width={size} height={size} viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+        <rect width="140" height="140" fill="transparent" />
+        <rect x="10" y="10" width="50" height="50" rx="4" fill="none" stroke="currentColor" strokeWidth="3" />
+        <rect x="20" y="20" width="30" height="30" rx="2" fill="currentColor" />
+        <rect x="80" y="10" width="50" height="50" rx="4" fill="none" stroke="currentColor" strokeWidth="3" />
+        <rect x="90" y="20" width="30" height="30" rx="2" fill="currentColor" />
+        <rect x="10" y="80" width="50" height="50" rx="4" fill="none" stroke="currentColor" strokeWidth="3" />
+        <rect x="20" y="90" width="30" height="30" rx="2" fill="currentColor" />
+        <rect x="80" y="80" width="8" height="8" fill="currentColor" />
+        <rect x="92" y="80" width="8" height="8" fill="currentColor" />
+        <rect x="104" y="80" width="8" height="8" fill="currentColor" />
+        <rect x="116" y="80" width="8" height="8" fill="currentColor" />
+        <rect x="80" y="92" width="8" height="8" fill="currentColor" />
+        <rect x="104" y="92" width="8" height="8" fill="currentColor" />
+        <rect x="80" y="104" width="8" height="8" fill="currentColor" />
+        <rect x="92" y="104" width="8" height="8" fill="currentColor" />
+        <rect x="116" y="104" width="8" height="8" fill="currentColor" />
+        <rect x="80" y="116" width="8" height="8" fill="currentColor" />
+        <rect x="104" y="116" width="8" height="8" fill="currentColor" />
+        <rect x="116" y="116" width="8" height="8" fill="currentColor" />
+        <rect x="68" y="10" width="4" height="4" fill="currentColor" />
+        <rect x="68" y="18" width="4" height="8" fill="currentColor" />
+        <rect x="68" y="30" width="4" height="4" fill="currentColor" />
+        <rect x="68" y="38" width="4" height="16" fill="currentColor" />
+        <rect x="68" y="58" width="4" height="4" fill="currentColor" />
+        <rect x="68" y="66" width="4" height="8" fill="currentColor" />
+      </svg>
+
+      <Box sx={{ textAlign: 'center' }}>
+        <Typography fontSize={11} color="text.secondary" mb={0.5} textTransform="uppercase" letterSpacing={0.6}>
+          Hash TOTP
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{
+            fontFamily: 'monospace',
+            fontSize: 18,
+            fontWeight: 600,
+            letterSpacing: 1.5,
+            wordBreak: 'break-word',
+            lineHeight: 1.3,
+          }}
+        >
+          {hash || 'Generando...'}
+        </Typography>
+      </Box>
+    </Stack>
   );
 }
 

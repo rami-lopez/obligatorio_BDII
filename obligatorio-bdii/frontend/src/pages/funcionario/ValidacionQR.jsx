@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Box, Typography, Stack, Button, Paper,
-  TextField, InputAdornment, Divider, Chip,
+  TextField, InputAdornment, Divider, Chip, MenuItem,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
+import DevicesOtherIcon from '@mui/icons-material/DevicesOther';
+import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
+import KeyIcon from '@mui/icons-material/Key';
+import { getDispositivos, postValidacion } from '../../api/validacion';
 
 const RESULTADO_TIMEOUT = 2200;
 
@@ -85,16 +89,16 @@ function LogItem({ item }) {
 
 function ValidacionQR() {
   const [resultado, setResultado] = useState(null);
-  const [busqueda, setBusqueda] = useState('');
-  const [okCount, setOkCount] = useState(24);
-  const [errCount, setErrCount] = useState(2);
-  const [log, setLog] = useState([
-    { valido: true,  numero: 'A-00419', motivo: null,                   hora: '20:14' },
-    { valido: true,  numero: 'A-00411', motivo: null,                   hora: '20:13' },
-    { valido: false, numero: null,      motivo: 'QR ya utilizado',       hora: '20:11' },
-    { valido: true,  numero: 'A-00398', motivo: null,                   hora: '20:09' },
-    { valido: false, numero: null,      motivo: 'Entrada de otro evento', hora: '20:07' },
-  ]);
+  const [idEntrada, setIdEntrada] = useState('');
+  const [hashIngresado, setHashIngresado] = useState('');
+  const [dispositivos, setDispositivos] = useState([]);
+  const [identificadorDisp, setIdentificadorDisp] = useState('');
+  const [loadingDispositivos, setLoadingDispositivos] = useState(true);
+  const [validando, setValidando] = useState(false);
+  const [error, setError] = useState('');
+  const [okCount, setOkCount] = useState(0);
+  const [errCount, setErrCount] = useState(0);
+  const [log, setLog] = useState([]);
 
   const timeoutRef = useRef(null);
   const scanLineRef = useRef(null);
@@ -104,11 +108,24 @@ function ValidacionQR() {
     return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
   };
 
-  const randomNumero = () => {
-    const letra = String.fromCharCode(65 + Math.floor(Math.random() * 4));
-    const num = String(Math.floor(Math.random() * 900) + 100).padStart(5, '0');
-    return `${letra}-${num}`;
+  const cargarDispositivos = async () => {
+    setLoadingDispositivos(true);
+    try {
+      const data = await getDispositivos();
+      setDispositivos(data);
+      if (data.length > 0) {
+        setIdentificadorDisp(prev => prev || data[0].identificador);
+      }
+    } catch (err) {
+      setError(err?.response?.data?.detail || 'No se pudieron cargar los dispositivos asignados');
+    } finally {
+      setLoadingDispositivos(false);
+    }
   };
+
+  useEffect(() => {
+    cargarDispositivos();
+  }, []);
 
   const mostrarResultado = (res) => {
     clearTimeout(timeoutRef.current);
@@ -127,49 +144,48 @@ function ValidacionQR() {
     }, RESULTADO_TIMEOUT);
   };
 
-  const simularValido = () => {
-    const numero = randomNumero();
-    mostrarResultado({
-      valido: true,
-      numero,
-      sector: MOCK_VALIDO.sector,
-      tipo: MOCK_VALIDO.tipo,
-      motivo: null,
-      hora: ahora(),
-    });
+  const cargarEjemplo = () => {
+    setIdEntrada('1');
+    setHashIngresado('123456');
+    setError('');
   };
 
-  const simularInvalido = () => {
-    const motivo = MOCK_INVALIDOS[Math.floor(Math.random() * MOCK_INVALIDOS.length)];
-    mostrarResultado({
-      valido: false,
-      numero: null,
-      motivo,
-      hora: ahora(),
-    });
-  };
+  const handleValidar = async () => {
+    if (!idEntrada.trim() || !hashIngresado.trim() || !identificadorDisp.trim()) {
+      setError('Completá el id de entrada, el hash y el dispositivo antes de validar');
+      return;
+    }
 
-  const handleBusqueda = () => {
-    if (!busqueda.trim()) return;
-    // Reemplazar con: fetch(`/api/validacion/manual?numero=${busqueda}`)
-    const valido = Math.random() > 0.35;
-    if (valido) {
+    setValidando(true);
+    setError('');
+    try {
+      const payload = {
+        id_entrada: Number(idEntrada),
+        hash_ingresado: hashIngresado.trim(),
+        identificador_disp: identificadorDisp.trim(),
+      };
+      const response = await postValidacion(payload);
       mostrarResultado({
         valido: true,
-        numero: busqueda.trim().toUpperCase(),
-        sector: 'Tribuna Norte',
-        motivo: null,
+        numero: payload.id_entrada,
+        sector: 'Validación registrada',
+        tipo: null,
+        motivo: response?.mensaje || 'Entrada validada correctamente',
         hora: ahora(),
       });
-    } else {
+      setIdEntrada('');
+      setHashIngresado('');
+    } catch (err) {
+      const motivo = err?.response?.data?.detail || 'No se pudo validar la entrada';
       mostrarResultado({
         valido: false,
         numero: null,
-        motivo: 'Entrada no encontrada',
+        motivo,
         hora: ahora(),
       });
+    } finally {
+      setValidando(false);
     }
-    setBusqueda('');
   };
 
   useEffect(() => {
@@ -206,9 +222,28 @@ function ValidacionQR() {
               Estadio Azteca · 14 jun 2026 · 20:00 hs · Puerta C
             </Typography>
           </Box>
-          <Button variant="outlined" size="small" sx={{ fontSize: 12, flexShrink: 0 }}>
-            Cambiar
-          </Button>
+          <TextField
+            select
+            size="small"
+            label="Dispositivo"
+            value={identificadorDisp}
+            onChange={e => setIdentificadorDisp(e.target.value)}
+            disabled={loadingDispositivos}
+            sx={{ minWidth: 220, flexShrink: 0 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <DevicesOtherIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
+                </InputAdornment>
+              ),
+            }}
+          >
+            {dispositivos.map(d => (
+              <MenuItem key={d.identificador} value={d.identificador}>
+                {d.identificador}
+              </MenuItem>
+            ))}
+          </TextField>
         </Paper>
 
         {/* Área del escáner */}
@@ -254,7 +289,7 @@ function ValidacionQR() {
               fontSize: 12, color: 'rgba(255,255,255,0.6)',
             }}
           >
-            Apuntá la cámara al código QR de la entrada
+            Cargá el id y hash del QR para validar contra el backend
           </Typography>
 
           {/* Overlay de resultado */}
@@ -267,64 +302,70 @@ function ValidacionQR() {
           />
         </Box>
 
-        {/* Botones de simulación */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-          <Button
-            variant="outlined"
-            startIcon={<QrCodeScannerIcon sx={{ fontSize: 14 }} />}
-            onClick={simularValido}
-            sx={{
-              fontSize: 12, py: 0.875,
-              color: '#27500A', borderColor: '#C0DD97',
-              bgcolor: '#EAF3DE',
-              '&:hover': { bgcolor: '#D4ECBA', borderColor: '#3B6D11' },
-            }}
-          >
-            Simular QR válido
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<QrCodeScannerIcon sx={{ fontSize: 14 }} />}
-            onClick={simularInvalido}
-            sx={{
-              fontSize: 12, py: 0.875,
-              color: '#791F1F', borderColor: '#F5B8B8',
-              bgcolor: '#FCEBEB',
-              '&:hover': { bgcolor: '#FAD4D4', borderColor: '#E24B4A' },
-            }}
-          >
-            Simular QR inválido
-          </Button>
-        </Box>
-
-        {/* Búsqueda manual */}
-        <TextField
-          size="small"
-          fullWidth
-          placeholder="Buscar entrada por número (Ej: A-00421)"
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleBusqueda()}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
-              </InputAdornment>
-            ),
-            endAdornment: busqueda && (
-              <InputAdornment position="end">
-                <Button
-                  size="small"
-                  variant="contained"
-                  onClick={handleBusqueda}
-                  sx={{ fontSize: 12, py: 0.4, px: 1.5, minWidth: 0 }}
-                >
-                  Buscar
-                </Button>
-              </InputAdornment>
-            ),
-          }}
-        />
+        <Paper elevation={0} sx={{ border: '0.5px solid', borderColor: 'divider', borderRadius: 2, p: 1.75 }}>
+          <Stack gap={1.25}>
+            <Typography fontSize={11} color="text.disabled" textTransform="uppercase" letterSpacing={0.5}>
+              Validación manual
+            </Typography>
+            <TextField
+              size="small"
+              fullWidth
+              label="ID de entrada"
+              value={idEntrada}
+              onChange={e => setIdEntrada(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <ConfirmationNumberIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              size="small"
+              fullWidth
+              label="Hash del QR"
+              value={hashIngresado}
+              onChange={e => setHashIngresado(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleValidar()}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <KeyIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            {error && (
+              <Typography fontSize={12} color="error.main">
+                {error}
+              </Typography>
+            )}
+            <Stack direction="row" gap={1}>
+              <Button
+                variant="outlined"
+                startIcon={<QrCodeScannerIcon sx={{ fontSize: 14 }} />}
+                onClick={cargarEjemplo}
+                sx={{
+                  fontSize: 12, py: 0.875,
+                  color: '#185FA5', borderColor: '#B9D7EF',
+                  bgcolor: '#E6F1FB',
+                  '&:hover': { bgcolor: '#D6E9F8', borderColor: '#185FA5' },
+                }}
+              >
+                Cargar ejemplo
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleValidar}
+                disabled={validando || loadingDispositivos}
+                sx={{ fontSize: 12, py: 0.875, flex: 1 }}
+              >
+                {validando ? 'Validando...' : 'Validar entrada'}
+              </Button>
+            </Stack>
+          </Stack>
+        </Paper>
       </Stack>
 
       {/* Columna derecha — stats y log */}
