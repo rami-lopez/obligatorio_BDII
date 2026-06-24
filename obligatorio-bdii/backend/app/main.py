@@ -18,6 +18,7 @@ from app.routers.entrada import router as entrada_router
 from app.routers.estadio import router as estadio_router, sedes_router
 from app.routers.entrada import router as entradas_router
 from app.routers.admin_funcionarios import router as admin_funcionarios_router
+from app.routers.funcionario import router as funcionario_router
 from app.routers.notificacion import router as notificacion_router
 
 
@@ -66,6 +67,7 @@ app.include_router(estadio_router)
 app.include_router(entrada_router)
 app.include_router(entradas_router)
 app.include_router(admin_funcionarios_router)
+app.include_router(funcionario_router)
 app.include_router(notificacion_router)
 
 

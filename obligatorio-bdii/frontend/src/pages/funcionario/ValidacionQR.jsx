@@ -3,7 +3,7 @@ import {
   Box, Typography, Stack, Button, Paper,
   TextField, InputAdornment, Divider, Chip, MenuItem,
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+import EventIcon from '@mui/icons-material/Event';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
@@ -11,6 +11,7 @@ import DevicesOtherIcon from '@mui/icons-material/DevicesOther';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import KeyIcon from '@mui/icons-material/Key';
 import { getDispositivos, postValidacion } from '../../api/validacion';
+import { getMiEvento } from '../../api/funcionarios';
 
 const RESULTADO_TIMEOUT = 2200;
 
@@ -99,6 +100,8 @@ function ValidacionQR() {
   const [okCount, setOkCount] = useState(0);
   const [errCount, setErrCount] = useState(0);
   const [log, setLog] = useState([]);
+  const [eventos, setEventos] = useState([]);
+  const [eventoActivo, setEventoActivo] = useState(null);
 
   const timeoutRef = useRef(null);
   const scanLineRef = useRef(null);
@@ -191,7 +194,25 @@ function ValidacionQR() {
     return () => clearTimeout(timeoutRef.current);
   }, []);
 
-  const capacidadSector = 3200;
+  useEffect(() => {
+    const cargarEvento = async () => {
+      try {
+        const data = await getMiEvento();
+        const ahora = new Date();
+        const futuros = data.filter(e => new Date(e.fecha_hora) > ahora);
+        setEventos(futuros);
+        if (futuros.length > 0) {
+          setEventoActivo(futuros[0]);
+        }
+      } catch (err) {
+        setError(err?.response?.data?.detail || 'No se pudo cargar el evento asignado');
+      }
+    };
+    
+    cargarEvento();
+  }, []);
+
+  const capacidadSector = eventoActivo?.capacidad_max ?? 3200;
   const progresoPct = Math.min((okCount / capacidadSector) * 100, 100);
 
   return (
@@ -207,42 +228,80 @@ function ValidacionQR() {
       {/* Columna izquierda — escáner */}
       <Stack gap={2}>
 
-        {/* Evento asignado */}
+        {/* Evento y sector activo */}
         <Paper elevation={0} sx={{
           border: '0.5px solid', borderColor: 'divider', borderRadius: 2,
-          p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5,
         }}>
-          <Box>
-            <Typography fontSize={11} color="text.disabled" textTransform="uppercase" letterSpacing={0.5} mb={0.25}>
-              Evento asignado
-            </Typography>
-            <Typography fontWeight={500} fontSize={14}>Argentina vs. México</Typography>
-            <Typography fontSize={12} color="text.secondary">
-              Estadio Azteca · 14 jun 2026 · 20:00 hs · Puerta C
-            </Typography>
-          </Box>
-          <TextField
-            select
-            size="small"
-            label="Dispositivo"
-            value={identificadorDisp}
-            onChange={e => setIdentificadorDisp(e.target.value)}
-            disabled={loadingDispositivos}
-            sx={{ minWidth: 220, flexShrink: 0 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <DevicesOtherIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
-                </InputAdornment>
-              ),
-            }}
-          >
-            {dispositivos.map(d => (
-              <MenuItem key={d.identificador} value={d.identificador}>
-                {d.identificador}
+          <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
+            <TextField
+              select
+              size="small"
+              label="Evento / Sector"
+              value={eventoActivo ? `${eventoActivo.id_evento}-${eventoActivo.sector_codigo}` : ''}
+              onChange={e => {
+                const val = e.target.value;
+                if (!val) return;
+                const [id, sector] = val.split('-');
+                const sel = eventos.find(ev => ev.id_evento === Number(id) && ev.sector_codigo === sector);
+                if (sel) setEventoActivo(sel);
+              }}
+              sx={{ minWidth: 320, flex: 1 }}
+              disabled={eventos.length === 0}
+              displayEmpty
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <EventIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
+              }}
+            >
+              <MenuItem value="" disabled>
+                {eventos.length === 0 ? 'No tenés eventos próximos asignados' : 'Seleccioná un evento y sector'}
               </MenuItem>
-            ))}
-          </TextField>
+              {eventos.map(ev => {
+                const fecha = new Date(ev.fecha_hora).toLocaleDateString('es-UY', {
+                  day: '2-digit', month: 'short', year: 'numeric',
+                  hour: '2-digit', minute: '2-digit',
+                });
+                return (
+                  <MenuItem key={`${ev.id_evento}-${ev.sector_codigo}`} value={`${ev.id_evento}-${ev.sector_codigo}`}>
+                    {ev.equipo_local} vs. {ev.equipo_visitante} · {fecha} · Sector {ev.sector_codigo}
+                  </MenuItem>
+                );
+              })}
+            </TextField>
+
+            <TextField
+              select
+              size="small"
+              label="Dispositivo"
+              value={identificadorDisp}
+              onChange={e => setIdentificadorDisp(e.target.value)}
+              disabled={loadingDispositivos}
+              sx={{ minWidth: 200, flexShrink: 0 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <DevicesOtherIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
+              }}
+            >
+              {dispositivos.map(d => (
+                <MenuItem key={d.identificador} value={d.identificador}>
+                  {d.identificador}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Stack>
+
+          {eventoActivo && (
+            <Typography fontSize={12} color="text.secondary">
+              {eventoActivo.estadio_nombre} · {eventoActivo.estadio_ciudad}
+            </Typography>
+          )}
         </Paper>
 
         {/* Área del escáner */}

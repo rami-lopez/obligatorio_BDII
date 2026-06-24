@@ -154,3 +154,39 @@ GROUP BY
     ev.equipo_local,
     ev.equipo_visitante,
     est.nombre;
+
+
+
+-- ============================================================
+-- VISTA: Evento de funcionario
+-- ============================================================
+CREATE OR REPLACE VIEW vw_funcionario_evento AS
+SELECT
+    f.mail_usuario AS mail_funcionario,
+    
+    e.id_evento,
+    e.fecha_hora,
+    e.equipo_local,
+    e.equipo_visitante,
+
+    es.id_estadio,
+    es.nombre AS estadio_nombre,
+    es.ciudad AS estadio_ciudad,
+
+    s.codigo AS sector_codigo,
+    s.capacidad_max,
+    s.costo
+
+FROM asignacion a
+JOIN funcionario f 
+    ON a.mail_funcionario = f.mail_usuario
+
+JOIN evento e 
+    ON a.id_evento = e.id_evento
+
+JOIN estadio es 
+    ON a.id_estadio = es.id_estadio
+
+JOIN sector s 
+    ON a.id_estadio = s.id_estadio 
+   AND a.codigo_sector = s.codigo;
