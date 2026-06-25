@@ -120,15 +120,7 @@ APP_ENV=facultad uvicorn app.main:app --reload
 
 ## Autenticación
 
-La autenticación la maneja Auth0. Las variables necesarias
-(`AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `AUTH0_CLIENT_ID`, `AUTH0_ALGORITHMS`)
-ya están incluidas en el `.env.local` / `.env.facultad` provisto.
-
-Para probar los endpoints protegidos desde Swagger (`/docs`):
-
 1. Click en **Authorize** (arriba a la derecha)
-2. Iniciar sesión con un usuario de Auth0
-3. Los endpoints que requieran autenticación van a incluir el token
-   automáticamente al usar **Try it out**
+2. Iniciar sesión con un usuario en la app
+3. Copiar el token guardado en localstorage y pegarlo en Swagger
 
-Para cambiar de usuario, abrir otra pestaña en incognito
