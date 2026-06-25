@@ -286,8 +286,10 @@ BEGIN
     END IF;
 END$$
 
-DELIMITER ;
-
+-- ============================================================
+-- estadio — BEFORE DELETE
+-- No permitir eliminar estadio con entradas activas
+-- ============================================================
 DROP TRIGGER IF EXISTS trg_estadio_bd$$
 
 CREATE TRIGGER trg_estadio_bd
@@ -307,3 +309,5 @@ BEGIN
         SET MESSAGE_TEXT = 'No se puede eliminar el estadio: tiene entradas activas';
     END IF;
 END$$
+
+DELIMITER ;
