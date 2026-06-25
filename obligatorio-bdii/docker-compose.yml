@@ -44,3 +44,13 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+        
+  frontend:
+    build: ./frontend
+    container_name: ticketing_frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:8000
+    depends_on:
+      - backend
