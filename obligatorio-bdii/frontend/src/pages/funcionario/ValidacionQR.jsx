@@ -8,7 +8,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import DevicesOtherIcon from '@mui/icons-material/DevicesOther';
-import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import KeyIcon from '@mui/icons-material/Key';
 import { getDispositivos, postValidacion } from '../../api/validacion';
 import { getMiEvento } from '../../api/funcionarios';
@@ -90,7 +89,6 @@ function LogItem({ item }) {
 
 function ValidacionQR() {
   const [resultado, setResultado] = useState(null);
-  const [idEntrada, setIdEntrada] = useState('');
   const [hashIngresado, setHashIngresado] = useState('');
   const [dispositivos, setDispositivos] = useState([]);
   const [identificadorDisp, setIdentificadorDisp] = useState('');
@@ -148,14 +146,13 @@ function ValidacionQR() {
   };
 
   const cargarEjemplo = () => {
-    setIdEntrada('1');
-    setHashIngresado('123456');
+    setHashIngresado('MToxNzgyMzM3MTUw');
     setError('');
   };
 
   const handleValidar = async () => {
-    if (!idEntrada.trim() || !hashIngresado.trim() || !identificadorDisp.trim()) {
-      setError('Completá el id de entrada, el hash y el dispositivo antes de validar');
+    if (!hashIngresado.trim() || !identificadorDisp.trim()) {
+      setError('Completá el hash y el dispositivo antes de validar');
       return;
     }
 
@@ -169,13 +166,12 @@ function ValidacionQR() {
       const response = await postValidacion(payload);
       mostrarResultado({
         valido: true,
-        numero: payload.id_entrada,
+        numero: response?.id_entrada ?? '',
         sector: 'Validación registrada',
         tipo: null,
         motivo: response?.mensaje || 'Entrada validada correctamente',
         hora: ahora(),
       });
-      setIdEntrada('');
       setHashIngresado('');
     } catch (err) {
       const motivo = err?.response?.data?.detail || 'No se pudo validar la entrada';
@@ -347,7 +343,7 @@ function ValidacionQR() {
               fontSize: 12, color: 'rgba(255,255,255,0.6)',
             }}
           >
-            Cargá el id y hash del QR para validar contra el backend
+            Cargá el hash del QR para validar contra el backend
           </Typography>
 
           {/* Overlay de resultado */}
@@ -365,20 +361,6 @@ function ValidacionQR() {
             <Typography fontSize={11} color="text.disabled" textTransform="uppercase" letterSpacing={0.5}>
               Validación manual
             </Typography>
-            <TextField
-              size="small"
-              fullWidth
-              label="ID de entrada"
-              value={idEntrada}
-              onChange={e => setIdEntrada(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <ConfirmationNumberIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
-                  </InputAdornment>
-                ),
-              }}
-            />
             <TextField
               size="small"
               fullWidth

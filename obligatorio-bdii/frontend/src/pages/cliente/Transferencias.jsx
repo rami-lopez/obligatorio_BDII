@@ -46,44 +46,106 @@ function EstadoPill({ estado }) {
 function TransferItem({ item, tipo, onAceptar, onRechazar, loading }) {
   const esRecibida = tipo === 'recibida';
   const esPendiente = item.estado === 'pendiente';
+
   const titulo = item.equipo_visitante
     ? `${item.equipo_local} vs. ${item.equipo_visitante}`
     : item.equipo_local;
 
   return (
-    <Box sx={{
-      bgcolor: 'background.paper',
-      border: '0.5px solid', borderColor: 'divider',
-      borderRadius: 2, overflow: 'hidden',
-    }}>
-      <Stack direction="row" alignItems="center" gap={1.5} p={1.5}>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography fontWeight={500} fontSize={14} noWrap mb={0.25}>
-            {titulo}
-          </Typography>
-          <Stack direction="row" gap={1.5} flexWrap="wrap">
-            <Typography fontSize={12} color="text.secondary" display="flex" alignItems="center" gap={0.3}>
-              <PlaceIcon sx={{ fontSize: 12 }} />Sector {item.codigo_sector} · {item.estadio}
+    <Box
+      sx={{
+        bgcolor: 'background.paper',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 2.5,
+        overflow: 'hidden',
+        transition: 'all 0.18s ease',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: '0 8px 22px rgba(15, 23, 42, 0.08)',
+          borderColor: '#B9D7EF',
+        },
+      }}
+    >
+      <Box
+        sx={{
+          px: 1.75,
+          py: 1.5,
+          borderLeft: '4px solid',
+          borderColor:
+            item.estado === 'pendiente'
+              ? '#C88719'
+              : item.estado === 'aceptada'
+                ? '#3B6D11'
+                : '#E24B4A',
+        }}
+      >
+        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" gap={1.5}>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Typography fontWeight={700} fontSize={15} lineHeight={1.25} mb={0.75}>
+              {titulo}
             </Typography>
-            <Typography fontSize={12} color="text.secondary" display="flex" alignItems="center" gap={0.3}>
-              <CalendarTodayIcon sx={{ fontSize: 11 }} />{formatearFecha(item.fecha_hora)}
-            </Typography>
-          </Stack>
-          <Typography fontSize={11} color="text.disabled" mt={0.25}>
-            {esRecibida ? `De: ${item.mail_origen}` : `Para: ${item.mail_destino}`}
-            {' · '}{formatearFecha(item.fecha_solicitud)}
-          </Typography>
-        </Box>
 
-        <Box sx={{ flexShrink: 0, textAlign: 'right' }}>
-          <EstadoPill estado={item.estado} />
+            <Stack gap={0.45}>
+              <Typography
+                fontSize={12}
+                color="text.secondary"
+                display="flex"
+                alignItems="center"
+                gap={0.5}
+              >
+                <PlaceIcon sx={{ fontSize: 14 }} />
+                Sector {item.codigo_sector} · {item.estadio}
+              </Typography>
+
+              <Typography
+                fontSize={12}
+                color="text.secondary"
+                display="flex"
+                alignItems="center"
+                gap={0.5}
+              >
+                <CalendarTodayIcon sx={{ fontSize: 13 }} />
+                {formatearFecha(item.fecha_hora)}
+              </Typography>
+            </Stack>
+          </Box>
+
+          <Box sx={{ flexShrink: 0 }}>
+            <EstadoPill estado={item.estado} />
+          </Box>
+        </Stack>
+
+        <Box
+          sx={{
+            mt: 1.25,
+            px: 1.25,
+            py: 0.85,
+            borderRadius: 1.5,
+            bgcolor: '#F8FAFC',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography fontSize={12} color="text.secondary">
+            {esRecibida ? 'De' : 'Para'}
+          </Typography>
+
+          <Typography fontSize={13} fontWeight={600} sx={{ wordBreak: 'break-word' }}>
+            {esRecibida ? item.mail_origen : item.mail_destino}
+          </Typography>
+
+          <Typography fontSize={11.5} color="text.disabled" mt={0.25}>
+            Solicitada el {formatearFecha(item.fecha_solicitud)}
+          </Typography>
         </Box>
-      </Stack>
+      </Box>
 
       {esRecibida && esPendiente && (
         <>
           <Divider />
-          <Stack direction="row" gap={1} p={1.5} pt={1.25}>
+
+          <Stack direction="row" gap={1} p={1.5}>
             <Button
               variant="contained"
               size="small"
@@ -92,13 +154,16 @@ function TransferItem({ item, tipo, onAceptar, onRechazar, loading }) {
               startIcon={<CheckCircleIcon sx={{ fontSize: 14 }} />}
               onClick={() => onAceptar(item.id_transferencia)}
               sx={{
-                fontSize: 12, py: 0.75,
+                fontSize: 12,
+                py: 0.75,
+                borderRadius: 1.5,
                 bgcolor: '#3B6D11',
                 '&:hover': { bgcolor: '#27500A' },
               }}
             >
               Aceptar entrada
             </Button>
+
             <Button
               variant="outlined"
               size="small"
@@ -107,9 +172,15 @@ function TransferItem({ item, tipo, onAceptar, onRechazar, loading }) {
               startIcon={<CancelIcon sx={{ fontSize: 14 }} />}
               onClick={() => onRechazar(item.id_transferencia)}
               sx={{
-                fontSize: 12, py: 0.75,
-                color: '#791F1F', borderColor: '#F5B8B8',
-                '&:hover': { bgcolor: '#FCEBEB', borderColor: '#E24B4A' },
+                fontSize: 12,
+                py: 0.75,
+                borderRadius: 1.5,
+                color: '#791F1F',
+                borderColor: '#F5B8B8',
+                '&:hover': {
+                  bgcolor: '#FCEBEB',
+                  borderColor: '#E24B4A',
+                },
               }}
             >
               Rechazar
@@ -207,15 +278,6 @@ function Transferencias() {
 
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2.5}>
         <Typography fontWeight={500} fontSize={18}>Transferencias</Typography>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<ConfirmationNumberIcon sx={{ fontSize: 14 }} />}
-          onClick={() => navigate('/mis-entradas')}
-          sx={{ fontSize: 12 }}
-        >
-          Ir a Mis entradas
-        </Button>
       </Stack>
 
       <Tabs

@@ -1,4 +1,5 @@
 from fastapi import HTTPException, status 
+from pymysql.err import OperationalError
 from app.db.database import fetch_one, execute, fetch_all
 
 async def crear_transferencia(
@@ -6,6 +7,9 @@ async def crear_transferencia(
     mail_destino: str,
     mail_origen: str,
 ):
+    mail_origen = mail_origen.lower()
+    mail_destino = mail_destino.lower()
+
     entrada = await fetch_one(
         """
         SELECT
@@ -26,7 +30,7 @@ async def crear_transferencia(
             detail="La entrada no existe"
         )
 
-    if entrada["mail_propietario"] != mail_origen:
+    if entrada["mail_propietario"].lower() != mail_origen:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No eres propietario de esta entrada"
@@ -36,6 +40,18 @@ async def crear_transferencia(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="La entrada ya fue utilizada"
+        )
+
+    if entrada["estado"] != "activa":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La entrada no está disponible para transferir"
+        )
+
+    if mail_origen == mail_destino:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes transferirte una entrada a ti mismo"
         )
 
     usuario_destino = await fetch_one(
@@ -53,12 +69,44 @@ async def crear_transferencia(
             detail="Usuario destino inexistente"
         )
 
+    usuario_general_destino = await fetch_one(
+        """
+        SELECT mail_usuario
+        FROM usuario_general
+        WHERE mail_usuario = %s
+        """,
+        (mail_destino,)
+    )
+
+    if usuario_general_destino is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Solo se pueden transferir entradas a usuarios generales"
+        )
+
+    pendiente = await fetch_one(
+        """
+        SELECT id_transferencia
+        FROM transferencia
+        WHERE id_entrada = %s
+          AND estado = 'pendiente'
+        LIMIT 1
+        """,
+        (id_entrada,)
+    )
+
+    if pendiente is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ya existe una transferencia pendiente para esta entrada"
+        )
+
     transferencias = await fetch_one(
         """
         SELECT COUNT(*) AS cantidad
         FROM transferencia
         WHERE id_entrada = %s
-        AND estado = 'aceptada'
+          AND estado = 'aceptada'
         """,
         (id_entrada,)
     )
@@ -69,33 +117,48 @@ async def crear_transferencia(
             detail="La entrada alcanzó el máximo de transferencias"
         )
 
-    await execute(
-        """
-        INSERT INTO transferencia(
-            id_entrada,
-            mail_origen,
-            mail_destino,
-            nro_orden
+    try:
+        await execute(
+            """
+            INSERT INTO transferencia(
+                id_entrada,
+                mail_origen,
+                mail_destino,
+                nro_orden
+            )
+            VALUES(
+                %s,
+                %s,
+                %s,
+                %s
+            )
+            """,
+            (
+                id_entrada,
+                mail_origen,
+                mail_destino,
+                transferencias["cantidad"] + 1,
+            )
         )
-        VALUES(
-            %s,
-            %s,
-            %s,
-            %s
-        )
-        """,
-        (
-            id_entrada,
-            mail_origen.lower(),
-            mail_destino.lower(),
-            transferencias["cantidad"] + 1,
-        )
-    )
 
-    await execute(
-        "UPDATE entrada SET estado = 'transferida' WHERE id_entrada = %s",
-        (id_entrada,)
-    )
+        await execute(
+            """
+            UPDATE entrada
+            SET estado = 'transferida'
+            WHERE id_entrada = %s
+              AND estado = 'activa'
+            """,
+            (id_entrada,)
+        )
+
+    except OperationalError as e:
+        if e.args and e.args[0] == 1644:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=e.args[1],
+            )
+
+        raise
 
     return {
         "message": "Transferencia creada correctamente"

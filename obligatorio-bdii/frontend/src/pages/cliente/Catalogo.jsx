@@ -12,31 +12,90 @@ import { useAuth } from '../../hooks/useAuth';
 
 function EventoCardChico({ evento, onClick }) {
   const fechaStr = evento.fecha_hora
-    ? new Date(evento.fecha_hora).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+    ? new Date(evento.fecha_hora).toLocaleDateString('es-ES', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
     : '';
+
+  const titulo = evento.equipo_visitante
+    ? `${evento.equipo_local} vs. ${evento.equipo_visitante}`
+    : evento.equipo_local;
+
   return (
     <Card
       elevation={0}
       onClick={onClick}
       sx={{
-        border: '0.5px solid', borderColor: 'divider', borderRadius: 2,
-        cursor: 'pointer', overflow: 'hidden',
-        '&:hover': { borderColor: 'secondary.main' },
-        transition: 'border-color 0.15s',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 2.5,
+        cursor: 'pointer',
+        overflow: 'hidden',
+        bgcolor: 'background.paper',
+        transition: 'all 0.18s ease',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: '0 8px 22px rgba(15, 23, 42, 0.08)',
+          borderColor: '#B9D7EF',
+        },
       }}
     >
-      <Box sx={{ p: '12px 14px' }}>
-        <Typography fontWeight={500} fontSize={14} mb={0.75}>
-          {evento.equipo_visitante
-            ? `${evento.equipo_local} vs. ${evento.equipo_visitante}`
-            : evento.equipo_local}
-        </Typography>
-        <Typography fontSize={12} color="text.secondary" display="flex" alignItems="center" gap={0.4}>
-          <CalendarTodayIcon sx={{ fontSize: 12 }} />{fechaStr}
-        </Typography>
-        <Typography fontSize={11} color="text.disabled" mt={0.25}>
+      <Box
+        sx={{
+          height: 72,
+          background: 'linear-gradient(135deg, #E6F1FB 0%, #F7FAFC 100%)',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: 2,
+        }}
+      >
+        <Typography
+          fontSize={11}
+          color="primary.main"
+          fontWeight={700}
+          textTransform="uppercase"
+          letterSpacing={0.8}
+          textAlign="center"
+          noWrap
+          sx={{ maxWidth: '100%' }}
+        >
           {evento.estadio_nombre}
         </Typography>
+      </Box>
+
+      <Box sx={{ p: 1.75 }}>
+        <Typography fontWeight={700} fontSize={15} mb={1} lineHeight={1.25}>
+          {titulo}
+        </Typography>
+
+        <Stack gap={0.6}>
+          <Typography
+            fontSize={12}
+            color="text.secondary"
+            display="flex"
+            alignItems="center"
+            gap={0.5}
+          >
+            <CalendarTodayIcon sx={{ fontSize: 14 }} />
+            {fechaStr}
+          </Typography>
+
+          <Typography
+            fontSize={12}
+            color="text.secondary"
+            display="flex"
+            alignItems="center"
+            gap={0.5}
+          >
+            <PlaceIcon sx={{ fontSize: 14 }} />
+            {evento.estadio_nombre}
+          </Typography>
+        </Stack>
       </Box>
     </Card>
   );
@@ -111,33 +170,85 @@ function Catalogo() {
   return (
     <Box sx={{ px: { xs: 2, md: 3 }, py: 3, maxWidth: 1200, mx: 'auto' }}>
 
-      <Stack direction="row" gap={1} mb={3} flexWrap="wrap" alignItems="center">
-        <Chip
-          icon={<PlaceIcon sx={{ fontSize: '14px !important' }} />}
-          label={sedeActiva ? sedes.find(s => s.id_sede === sedeActiva)?.pais : 'Sede'}
-          variant="outlined"
-          onClick={(e) => setSedeAnchor(e.currentTarget)}
-          onDelete={sedeActiva ? () => { setSedeActiva(null); setEstadioActivo(null); } : undefined}
+      <Box
+        sx={{
+          mb: 3,
+          p: { xs: 2, md: 3 },
+          borderRadius: 3,
+          background: 'linear-gradient(135deg, #E6F1FB 0%, #F7FAFC 55%, #FAEEDA 100%)',
+          border: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Typography
+          fontWeight={800}
+          fontSize={{ xs: 24, md: 32 }}
+          color="primary.main"
+          mb={0.75}
+        >
+          ¡Comprá tus entradas!
+        </Typography>
+
+        <Typography fontSize={14} color="text.secondary" mb={2.5}>
+          Elegí el partido, filtrá por sede o estadio y asegurá tu lugar en el Mundial 2026.
+        </Typography>
+
+        <Box
           sx={{
-            fontSize: 13, height: 32, borderRadius: 3, cursor: 'pointer',
-            borderColor: sedeActiva ? 'primary.main' : 'divider',
-            color: sedeActiva ? 'primary.main' : 'text.secondary',
-            bgcolor: sedeActiva ? '#E6F1FB' : 'transparent',
+            p: 1.5,
+            borderRadius: 2,
+            bgcolor: 'rgba(255,255,255,0.75)',
+            border: '1px solid',
+            borderColor: 'divider',
           }}
-        />
-        <Chip
-          label={estadioActivo || 'Estadio'}
-          variant="outlined"
-          onClick={(e) => setEstadioAnchor(e.currentTarget)}
-          onDelete={estadioActivo ? () => setEstadioActivo(null) : undefined}
-          sx={{
-            fontSize: 13, height: 32, borderRadius: 3, cursor: 'pointer',
-            borderColor: estadioActivo ? 'primary.main' : 'divider',
-            color: estadioActivo ? 'primary.main' : 'text.secondary',
-            bgcolor: estadioActivo ? '#E6F1FB' : 'transparent',
-          }}
-        />
-      </Stack>
+        >
+
+          <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center">
+            <Chip
+              icon={<PlaceIcon sx={{ fontSize: '14px !important' }} />}
+              label={sedeActiva ? sedes.find(s => s.id_sede === sedeActiva)?.pais : 'Filtrar por sede'}
+              variant="outlined"
+              onClick={(e) => setSedeAnchor(e.currentTarget)}
+              onDelete={sedeActiva ? () => { setSedeActiva(null); setEstadioActivo(null); } : undefined}
+              sx={{
+                fontSize: 13,
+                height: 34,
+                borderRadius: 2,
+                cursor: 'pointer',
+                fontWeight: 600,
+                borderColor: sedeActiva ? 'primary.main' : '#B9D7EF',
+                color: sedeActiva ? 'primary.main' : '#185FA5',
+                bgcolor: sedeActiva ? '#E6F1FB' : '#F8FAFC',
+                '&:hover': {
+                  bgcolor: '#E6F1FB',
+                  borderColor: 'primary.main',
+                },
+              }}
+            />
+
+            <Chip
+              label={estadioActivo || 'Filtrar por estadio'}
+              variant="outlined"
+              onClick={(e) => setEstadioAnchor(e.currentTarget)}
+              onDelete={estadioActivo ? () => setEstadioActivo(null) : undefined}
+              sx={{
+                fontSize: 13,
+                height: 34,
+                borderRadius: 2,
+                cursor: 'pointer',
+                fontWeight: 600,
+                borderColor: estadioActivo ? 'primary.main' : '#B9D7EF',
+                color: estadioActivo ? 'primary.main' : '#185FA5',
+                bgcolor: estadioActivo ? '#E6F1FB' : '#F8FAFC',
+                '&:hover': {
+                  bgcolor: '#E6F1FB',
+                  borderColor: 'primary.main',
+                },
+              }}
+            />
+          </Stack>
+        </Box>
+      </Box>
 
       <Popover
         open={Boolean(sedeAnchor)}
@@ -227,7 +338,7 @@ function Catalogo() {
 
       {eventos.length > 0 && (
         <Box sx={{ mb: 2 }}>
-          <Typography fontSize={11} color="text.disabled">
+          <Typography fontSize={13} color="text.secondary" fontWeight={500}>
             {filtrados.length} de {eventos.length} eventos
             {q && ` · buscando "${q}"`}
             {sedeActiva && ` · ${sedes.find(s => s.id_sede === sedeActiva)?.pais}`}
@@ -242,9 +353,15 @@ function Catalogo() {
         </Box>
       ) : filtrados.length > 0 ? (
         <Box>
-          <Typography fontSize={12} fontWeight={500} color="text.secondary"
-            textTransform="uppercase" letterSpacing={0.5} mb={1.5}>
-            Eventos
+          <Typography
+            fontSize={12}
+            fontWeight={700}
+            color="text.secondary"
+            textTransform="uppercase"
+            letterSpacing={0.8}
+            mb={1.5}
+          >
+            Eventos disponibles
           </Typography>
           <Grid container spacing={1.75}>
             {filtrados.map(e => (

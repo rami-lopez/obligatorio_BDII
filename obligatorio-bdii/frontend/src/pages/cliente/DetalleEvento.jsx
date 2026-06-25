@@ -155,38 +155,93 @@ function DetalleEvento() {
   return (
     <Box>
       {/* Hero */}
-      <Box sx={{ height: 160, position: 'relative', overflow: 'hidden', bgcolor: '#111' }}>
-        <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' }} />
+      <Box
+        sx={{
+          height: 190,
+          position: 'relative',
+          overflow: 'hidden',
+          background: 'linear-gradient(135deg, #063B73 0%, #0B5FA5 45%, #E24B4A 100%)',
+        }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            background:
+              'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.22), transparent 28%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.14), transparent 24%)',
+          }}
+        />
 
-        {/* Back button */}
         <IconButton
           onClick={() => navigate(-1)}
           sx={{
-            position: 'absolute', top: 12, left: 16,
-            bgcolor: 'rgba(0,0,0,0.35)', color: '#fff',
-            '&:hover': { bgcolor: 'rgba(0,0,0,0.55)' },
+            position: 'absolute',
+            top: 14,
+            left: 18,
+            bgcolor: 'rgba(255,255,255,0.18)',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.28)',
+            '&:hover': { bgcolor: 'rgba(255,255,255,0.28)' },
           }}
           size="small"
         >
           <ArrowBackIcon fontSize="small" />
         </IconButton>
 
-        <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, p: '16px 20px' }}>
-          <Typography fontWeight={500} fontSize={22} color="#fff" mb={0.5}>{titulo}</Typography>
-          <Stack direction="row" gap={2} flexWrap="wrap">
-            <Typography fontSize={13} color="rgba(255,255,255,0.8)" display="flex" alignItems="center" gap={0.5}>
-              <CalendarTodayIcon sx={{ fontSize: 14 }} />{fechaStr}
-            </Typography>
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            p: { xs: 2.25, md: '22px 28px' },
+          }}
+        >
+          <Chip
+            label={evento.estadio_nombre || 'Evento'}
+            size="small"
+            sx={{
+              mb: 1.25,
+              bgcolor: 'rgba(255,255,255,0.18)',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.28)',
+              fontWeight: 600,
+            }}
+          />
+
+          <Typography fontWeight={800} fontSize={{ xs: 24, md: 30 }} color="#fff" mb={1}>
+            {titulo}
+          </Typography>
+
+          <Stack direction="row" gap={1} flexWrap="wrap">
+            <Chip
+              icon={<CalendarTodayIcon sx={{ fontSize: '14px !important', color: '#fff !important' }} />}
+              label={fechaStr}
+              size="small"
+              sx={{
+                bgcolor: 'rgba(255,255,255,0.16)',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.25)',
+                fontWeight: 500,
+              }}
+            />
+
             {horaStr && (
-              <Typography fontSize={13} color="rgba(255,255,255,0.8)" display="flex" alignItems="center" gap={0.5}>
-                <AccessTimeIcon sx={{ fontSize: 14 }} />{horaStr} hs
-              </Typography>
+              <Chip
+                icon={<AccessTimeIcon sx={{ fontSize: '14px !important', color: '#fff !important' }} />}
+                label={`${horaStr} hs`}
+                size="small"
+                sx={{
+                  bgcolor: 'rgba(255,255,255,0.16)',
+                  color: '#fff',
+                  border: '1px solid rgba(255,255,255,0.25)',
+                  fontWeight: 500,
+                }}
+              />
             )}
           </Stack>
         </Box>
       </Box>
-
-      {/* Contenido */}
       <Box sx={{
         display: 'grid',
         gridTemplateColumns: { xs: '1fr', md: '1fr 300px' },

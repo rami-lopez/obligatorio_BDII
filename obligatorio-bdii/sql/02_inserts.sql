@@ -108,13 +108,13 @@ INSERT INTO sector (id_estadio, codigo, capacidad_max, costo) VALUES
 -- EVENTO
 -- ============================================================
 INSERT INTO evento (fecha_hora, equipo_local, equipo_visitante, id_estadio, mail_admin) VALUES
-('2026-06-11 20:00:00', 'Mexico',         'Canada',                1, 'admin1@example.com'),
-('2026-06-12 18:00:00', 'Estados Unidos',  'Japon',                 2, 'admin1@example.com'),
-('2026-06-14 21:00:00', 'Argentina',      'Uruguay',               3, 'admin2@example.com'),
-('2026-06-16 19:00:00', 'Espana',         'Francia',               4, 'admin3@example.com'),
-('2026-06-18 16:00:00', 'Brasil',         'Portugal',              5, 'admin3@example.com'),
-('2026-06-22 20:00:00', 'Inglaterra',     'Alemania',              1, 'admin1@example.com'),
-('2026-06-24 17:00:00', 'Marruecos',      'Colombia',              2, 'admin1@example.com');
+('2026-07-11 20:00:00', 'Mexico',         'Canada',                1, 'admin1@example.com'),
+('2026-07-12 18:00:00', 'Estados Unidos',  'Japon',                 2, 'admin1@example.com'),
+('2026-07-14 21:00:00', 'Argentina',      'Uruguay',               3, 'admin2@example.com'),
+('2026-07-16 19:00:00', 'Espana',         'Francia',               4, 'admin3@example.com'),
+('2026-07-18 16:00:00', 'Brasil',         'Portugal',              5, 'admin3@example.com'),
+('2026-07-22 20:00:00', 'Inglaterra',     'Alemania',              1, 'admin1@example.com'),
+('2026-07-24 17:00:00', 'Marruecos',      'Colombia',              2, 'admin1@example.com');
 
 -- ============================================================
 -- EVENTO_SECTOR

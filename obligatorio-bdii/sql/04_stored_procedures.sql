@@ -1,6 +1,5 @@
 SET FOREIGN_KEY_CHECKS= 0;
 
--- Registar usuario
 
 DELIMITER $$
 
@@ -88,7 +87,6 @@ END$$
 
 DELIMITER ;
 
--- Alta de evento
 
 DELIMITER $$
 
@@ -130,7 +128,6 @@ END$$
 
 DELIMITER ;
 
---Solicitar transferencia
 
 DELIMITER $$
 
@@ -193,7 +190,6 @@ END$$
 
 DELIMITER ;
 
---Aceptar transferencia
 
 DELIMITER $$
 
@@ -235,7 +231,6 @@ END$$
 
 DELIMITER ;
 
--- Comprar entradas
 
 DELIMITER $$
 
