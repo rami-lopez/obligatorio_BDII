@@ -140,3 +140,62 @@ async def crear_sector(
             costo
         )
     )
+
+async def eliminar_estadio(id_estadio: int):
+
+    estadio = await fetch_one(
+        """
+        SELECT id_estadio
+        FROM estadio
+        WHERE id_estadio = %s
+        """,
+        (id_estadio,)
+    )
+
+    if estadio is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Estadio no encontrado"
+        )
+
+    async with transaction() as conn:
+        async with conn.cursor() as cursor:
+
+            # eliminar entradas de eventos del estadio
+            await cursor.execute(
+                """
+                DELETE en
+                FROM entrada en
+                JOIN evento ev
+                    ON en.id_evento = ev.id_evento
+                WHERE ev.id_estadio = %s
+                """,
+                (id_estadio,)
+            )
+
+            # eliminar eventos
+            await cursor.execute(
+                """
+                DELETE FROM evento
+                WHERE id_estadio = %s
+                """,
+                (id_estadio,)
+            )
+
+            # eliminar sectores
+            await cursor.execute(
+                """
+                DELETE FROM sector
+                WHERE id_estadio = %s
+                """,
+                (id_estadio,)
+            )
+
+            # eliminar estadio
+            await cursor.execute(
+                """
+                DELETE FROM estadio
+                WHERE id_estadio = %s
+                """,
+                (id_estadio,)
+            )

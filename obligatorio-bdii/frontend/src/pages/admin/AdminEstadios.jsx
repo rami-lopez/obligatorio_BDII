@@ -8,7 +8,14 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckIcon from '@mui/icons-material/Check';
-import { listarEstadios, listarSedes, crearEstadio } from '../../api/estadios';
+import { listarEstadios, listarSedes, crearEstadio, eliminarEstadio } from '../../api/estadios';
+import DeleteIcon from '@mui/icons-material/Delete';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from '@mui/material';
 
 const SECTORES_BASE = [
   { codigo: 'A1' },
@@ -76,6 +83,7 @@ function FormEstadio({ onClose, onGuardar, sedes }) {
       setSaving(false);
     }
   };
+
 
   return (
     <Paper elevation={0} sx={{ border: '0.5px solid', borderColor: 'divider', borderRadius: 2, mb: 2.5 }}>
@@ -185,6 +193,7 @@ function AdminEstadios() {
   const [busqueda, setBusqueda] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [estadioAEliminar, setEstadioAEliminar] = useState(null);
 
   useEffect(() => {
     Promise.all([listarEstadios(), listarSedes()])
@@ -221,6 +230,24 @@ function AdminEstadios() {
       setError(err?.response?.data?.detail || 'Error al crear estadio');
       throw err;
     }
+  };
+  
+  const handleEliminar = async () => {
+    try {
+      await eliminarEstadio(estadioAEliminar.id_estadio);
+
+      await cargarEstadios();
+
+      setEstadioAEliminar(null);
+    } catch (err) {
+        console.error(err);
+        console.error(err?.response);
+
+        setError(
+          err?.response?.data?.detail ||
+          'Error al eliminar estadio'
+        );
+      }
   };
 
   if (loading) {
@@ -295,7 +322,7 @@ function AdminEstadios() {
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ bgcolor: 'background.default' }}>
-                  {['Estadio', 'Ciudad', 'País', 'Eventos'].map(h => (
+                  {['Estadio', 'Ciudad', 'País', 'Eventos', 'Acciones'].map(h => (
                     <TableCell key={h} sx={{ fontSize: 11, fontWeight: 500, color: 'text.disabled', textTransform: 'uppercase', letterSpacing: 0.4 }}>
                       {h}
                     </TableCell>
@@ -312,19 +339,58 @@ function AdminEstadios() {
                     <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{e.ciudad}</TableCell>
                     <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{sedeMap[e.id_sede] || e.pais || `ID ${e.id_sede}`}</TableCell>
                     <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{e.cantidad_eventos ?? 0}</TableCell>
+                    <TableCell>
+                      <IconButton
+                        color="error"
+                        size="small"
+                        onClick={() => setEstadioAEliminar(e)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {filtrados.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} align="center" sx={{ py: 4, color: 'text.disabled', fontSize: 13 }}>
+                    <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.disabled', fontSize: 13 }}>
                       No se encontraron estadios
                     </TableCell>
                   </TableRow>
                 )}
+                
               </TableBody>
             </Table>
           </TableContainer>
         </Paper>
+        <Dialog
+          open={Boolean(estadioAEliminar)}
+          onClose={() => setEstadioAEliminar(null)}
+        >
+          <DialogTitle>
+            Confirmar eliminación
+          </DialogTitle>
+
+          <DialogContent>
+            ¿Está seguro que desea eliminar el estadio, sus sectores y eventos asigandos de {' '}
+            <strong>{estadioAEliminar?.nombre}</strong>?
+          </DialogContent>
+
+          <DialogActions>
+            <Button
+              onClick={() => setEstadioAEliminar(null)}
+            >
+              Cancelar
+            </Button>
+
+            <Button
+              color="error"
+              variant="contained"
+              onClick={handleEliminar}
+            >
+              Eliminar
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Box>
   );

@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import {
   Box, Typography, TextField, Button,
-  MenuItem, Paper,
+  MenuItem, Paper, Chip, Stack, IconButton, InputAdornment,
 } from '@mui/material';
+import PhoneIcon from '@mui/icons-material/Phone';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import CloseIcon from '@mui/icons-material/Close';
 import { completarRegistro } from '../api/usuarios';
 import { useAuth } from '../hooks/useAuth';
 
@@ -35,6 +38,18 @@ export default function CompletarRegistro() {
     return Object.keys(e).length === 0;
   };
 
+  const agregarTelefono = () => {
+    const t = telefono.trim();
+    if (!t) return;
+    if (form.telefonos.includes(t)) return;
+    setForm(p => ({ ...p, telefonos: [...p.telefonos, t] }));
+    setTelefono('');
+  };
+
+  const sacarTelefono = (idx) => {
+    setForm(p => ({ ...p, telefonos: p.telefonos.filter((_, i) => i !== idx) }));
+  };
+
   const handleGuardar = async () => {
     if (!validar()) return;
     setLoading(true);
@@ -42,7 +57,6 @@ export default function CompletarRegistro() {
       await completarRegistro({
         mail: registeredEmail || user?.email,
         ...form,
-        telefonos: telefono ? [telefono] : [],
       });
       await refreshProfile();
       navigate('/', { replace: true });
@@ -98,8 +112,46 @@ export default function CompletarRegistro() {
           <TextField label="Calle" size="small" value={form.calle} onChange={e => set('calle', e.target.value)} error={!!errors.calle} helperText={errors.calle} placeholder="Ej: 18 de Julio" />
           <TextField label="Número" size="small" value={form.nro_dir} onChange={e => set('nro_dir', e.target.value)} error={!!errors.nro_dir} helperText={errors.nro_dir} placeholder="Ej: 1234" />
           <TextField label="Código postal" size="small" value={form.cod_postal} onChange={e => set('cod_postal', e.target.value)} error={!!errors.cod_postal} helperText={errors.cod_postal} placeholder="Ej: 11000" />
-          <TextField label="Teléfono (opcional)" size="small" value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="Ej: +598 99 123456" />
+          <TextField
+            label="Teléfono"
+            size="small"
+            value={telefono}
+            onChange={e => setTelefono(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), agregarTelefono())}
+            placeholder="Ej: +598 99 123456"
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PhoneIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: telefono.trim() && (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={agregarTelefono} tabIndex={-1}>
+                      <AddCircleIcon fontSize="small" color="primary" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
         </Box>
+
+        {form.telefonos.length > 0 && (
+          <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mb: 1 }}>
+            {form.telefonos.map((t, i) => (
+              <Chip
+                key={i}
+                icon={<PhoneIcon sx={{ fontSize: 14 }} />}
+                label={t}
+                size="small"
+                onDelete={() => sacarTelefono(i)}
+                deleteIcon={<CloseIcon fontSize="small" />}
+              />
+            ))}
+          </Stack>
+        )}
 
         {errors.general && (
           <Typography fontSize={12} color="error.main" mb={1}>

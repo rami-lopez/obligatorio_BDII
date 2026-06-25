@@ -17,3 +17,6 @@ export const crearEstadio = (data) =>
 
 export const crearSector = (idEstadio, data) =>
   client.post(`/estadios/${idEstadio}/sectores`, data).then(r => r.data);
+
+export const eliminarEstadio = (id) =>
+  client.delete(`/estadios/${id}`);

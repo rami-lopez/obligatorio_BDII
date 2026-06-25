@@ -16,6 +16,7 @@ from app.services.estadio import (
     crear_estadio,
     obtener_sectores,
     crear_sector,
+    eliminar_estadio
 )
 
 router = APIRouter(
@@ -80,3 +81,10 @@ async def alta_sector(
         sector.capacidad_max,
         sector.costo
     )
+
+@router.delete("/{id_estadio}", status_code=204)
+async def baja_estadio(
+    id_estadio: int,
+    current_user: dict = Depends(require_admin)
+):
+    await eliminar_estadio(id_estadio)
