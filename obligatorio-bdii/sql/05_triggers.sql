@@ -287,3 +287,23 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+DROP TRIGGER IF EXISTS trg_estadio_bd$$
+
+CREATE TRIGGER trg_estadio_bd
+BEFORE DELETE ON estadio
+FOR EACH ROW
+BEGIN
+    DECLARE v_activas INT;
+
+    SELECT COUNT(*) INTO v_activas
+    FROM evento ev
+    JOIN entrada en ON en.id_evento = ev.id_evento
+    WHERE ev.id_estadio = OLD.id_estadio
+      AND en.estado = 'activa';
+
+    IF v_activas > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'No se puede eliminar el estadio: tiene entradas activas';
+    END IF;
+END$$
