@@ -170,33 +170,85 @@ function Catalogo() {
   return (
     <Box sx={{ px: { xs: 2, md: 3 }, py: 3, maxWidth: 1200, mx: 'auto' }}>
 
-      <Stack direction="row" gap={1} mb={3} flexWrap="wrap" alignItems="center">
-        <Chip
-          icon={<PlaceIcon sx={{ fontSize: '14px !important' }} />}
-          label={sedeActiva ? sedes.find(s => s.id_sede === sedeActiva)?.pais : 'Sede'}
-          variant="outlined"
-          onClick={(e) => setSedeAnchor(e.currentTarget)}
-          onDelete={sedeActiva ? () => { setSedeActiva(null); setEstadioActivo(null); } : undefined}
+      <Box
+        sx={{
+          mb: 3,
+          p: { xs: 2, md: 3 },
+          borderRadius: 3,
+          background: 'linear-gradient(135deg, #E6F1FB 0%, #F7FAFC 55%, #FAEEDA 100%)',
+          border: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Typography
+          fontWeight={800}
+          fontSize={{ xs: 24, md: 32 }}
+          color="primary.main"
+          mb={0.75}
+        >
+          ¡Comprá tus entradas!
+        </Typography>
+
+        <Typography fontSize={14} color="text.secondary" mb={2.5}>
+          Elegí el partido, filtrá por sede o estadio y asegurá tu lugar en el Mundial 2026.
+        </Typography>
+
+        <Box
           sx={{
-            fontSize: 13, height: 32, borderRadius: 3, cursor: 'pointer',
-            borderColor: sedeActiva ? 'primary.main' : 'divider',
-            color: sedeActiva ? 'primary.main' : 'text.secondary',
-            bgcolor: sedeActiva ? '#E6F1FB' : 'transparent',
+            p: 1.5,
+            borderRadius: 2,
+            bgcolor: 'rgba(255,255,255,0.75)',
+            border: '1px solid',
+            borderColor: 'divider',
           }}
-        />
-        <Chip
-          label={estadioActivo || 'Estadio'}
-          variant="outlined"
-          onClick={(e) => setEstadioAnchor(e.currentTarget)}
-          onDelete={estadioActivo ? () => setEstadioActivo(null) : undefined}
-          sx={{
-            fontSize: 13, height: 32, borderRadius: 3, cursor: 'pointer',
-            borderColor: estadioActivo ? 'primary.main' : 'divider',
-            color: estadioActivo ? 'primary.main' : 'text.secondary',
-            bgcolor: estadioActivo ? '#E6F1FB' : 'transparent',
-          }}
-        />
-      </Stack>
+        >
+
+          <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center">
+            <Chip
+              icon={<PlaceIcon sx={{ fontSize: '14px !important' }} />}
+              label={sedeActiva ? sedes.find(s => s.id_sede === sedeActiva)?.pais : 'Filtrar por sede'}
+              variant="outlined"
+              onClick={(e) => setSedeAnchor(e.currentTarget)}
+              onDelete={sedeActiva ? () => { setSedeActiva(null); setEstadioActivo(null); } : undefined}
+              sx={{
+                fontSize: 13,
+                height: 34,
+                borderRadius: 2,
+                cursor: 'pointer',
+                fontWeight: 600,
+                borderColor: sedeActiva ? 'primary.main' : '#B9D7EF',
+                color: sedeActiva ? 'primary.main' : '#185FA5',
+                bgcolor: sedeActiva ? '#E6F1FB' : '#F8FAFC',
+                '&:hover': {
+                  bgcolor: '#E6F1FB',
+                  borderColor: 'primary.main',
+                },
+              }}
+            />
+
+            <Chip
+              label={estadioActivo || 'Filtrar por estadio'}
+              variant="outlined"
+              onClick={(e) => setEstadioAnchor(e.currentTarget)}
+              onDelete={estadioActivo ? () => setEstadioActivo(null) : undefined}
+              sx={{
+                fontSize: 13,
+                height: 34,
+                borderRadius: 2,
+                cursor: 'pointer',
+                fontWeight: 600,
+                borderColor: estadioActivo ? 'primary.main' : '#B9D7EF',
+                color: estadioActivo ? 'primary.main' : '#185FA5',
+                bgcolor: estadioActivo ? '#E6F1FB' : '#F8FAFC',
+                '&:hover': {
+                  bgcolor: '#E6F1FB',
+                  borderColor: 'primary.main',
+                },
+              }}
+            />
+          </Stack>
+        </Box>
+      </Box>
 
       <Popover
         open={Boolean(sedeAnchor)}
