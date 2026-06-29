@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status 
 from pymysql.err import OperationalError
-from app.db.database import fetch_one, execute, fetch_all
+from app.db.database import fetch_one, execute, fetch_all, call_procedure
 
 async def crear_transferencia(
     id_entrada: int,
@@ -10,42 +10,24 @@ async def crear_transferencia(
     mail_origen = mail_origen.lower()
     mail_destino = mail_destino.lower()
 
-    entrada = await fetch_one(
-        """
-        SELECT
-            e.mail_propietario,
-            e.estado,
-            ev.equipo_local,
-            ev.equipo_visitante
-        FROM entrada e
-        JOIN evento ev ON ev.id_evento = e.id_evento
-        WHERE e.id_entrada = %s
-        """,
-        (id_entrada,)
+    usuario_destino = await fetch_one(
+        "SELECT mail FROM usuario WHERE mail = %s",
+        (mail_destino,)
     )
-
-    if entrada is None:
+    if usuario_destino is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="La entrada no existe"
+            detail="Usuario destino inexistente"
         )
 
-    if entrada["mail_propietario"].lower() != mail_origen:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No eres propietario de esta entrada"
-        )
-
-    if entrada["estado"] == "consumida":
+    usuario_general_destino = await fetch_one(
+        "SELECT mail_usuario FROM usuario_general WHERE mail_usuario = %s",
+        (mail_destino,)
+    )
+    if usuario_general_destino is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La entrada ya fue utilizada"
-        )
-
-    if entrada["estado"] != "activa":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La entrada no está disponible para transferir"
+            detail="Solo se pueden transferir entradas a usuarios generales"
         )
 
     if mail_origen == mail_destino:
@@ -54,116 +36,20 @@ async def crear_transferencia(
             detail="No puedes transferirte una entrada a ti mismo"
         )
 
-    usuario_destino = await fetch_one(
-        """
-        SELECT mail
-        FROM usuario
-        WHERE mail = %s
-        """,
-        (mail_destino,)
-    )
-
-    if usuario_destino is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Usuario destino inexistente"
-        )
-
-    usuario_general_destino = await fetch_one(
-        """
-        SELECT mail_usuario
-        FROM usuario_general
-        WHERE mail_usuario = %s
-        """,
-        (mail_destino,)
-    )
-
-    if usuario_general_destino is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Solo se pueden transferir entradas a usuarios generales"
-        )
-
-    pendiente = await fetch_one(
-        """
-        SELECT id_transferencia
-        FROM transferencia
-        WHERE id_entrada = %s
-          AND estado = 'pendiente'
-        LIMIT 1
-        """,
-        (id_entrada,)
-    )
-
-    if pendiente is not None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Ya existe una transferencia pendiente para esta entrada"
-        )
-
-    transferencias = await fetch_one(
-        """
-        SELECT COUNT(*) AS cantidad
-        FROM transferencia
-        WHERE id_entrada = %s
-          AND estado = 'aceptada'
-        """,
-        (id_entrada,)
-    )
-
-    if transferencias["cantidad"] >= 3:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La entrada alcanzó el máximo de transferencias"
-        )
-
+    # Llamada al SP
     try:
-        await execute(
-            """
-            INSERT INTO transferencia(
-                id_entrada,
-                mail_origen,
-                mail_destino,
-                nro_orden
-            )
-            VALUES(
-                %s,
-                %s,
-                %s,
-                %s
-            )
-            """,
-            (
-                id_entrada,
-                mail_origen,
-                mail_destino,
-                transferencias["cantidad"] + 1,
-            )
-        )
-
-        await execute(
-            """
-            UPDATE entrada
-            SET estado = 'transferida'
-            WHERE id_entrada = %s
-              AND estado = 'activa'
-            """,
-            (id_entrada,)
-        )
-
+        await call_procedure("SP_SolicitarTransferencia", (id_entrada, mail_destino))
     except OperationalError as e:
         if e.args and e.args[0] == 1644:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=e.args[1],
             )
-
         raise
 
     return {
         "message": "Transferencia creada correctamente"
     }
-
 
 async def listar_transferencias(mail_usuario: str):
     return await fetch_all(
@@ -217,19 +103,13 @@ async def aceptar_transferencia(
     id_transferencia: int,
     mail_usuario: str
 ):
-
+    # Verificar que la transferencia existe y pertenece al usuario
     transferencia = await fetch_one(
         """
         SELECT
-            t.id_entrada,
-            t.mail_origen,
             t.mail_destino,
-            t.estado,
-            ev.equipo_local,
-            ev.equipo_visitante
+            t.estado
         FROM transferencia t
-        JOIN entrada e ON e.id_entrada = t.id_entrada
-        JOIN evento ev ON ev.id_evento = e.id_evento
         WHERE t.id_transferencia = %s
         """,
         (id_transferencia,)
@@ -253,28 +133,15 @@ async def aceptar_transferencia(
             detail="La transferencia ya fue procesada"
         )
 
-    await execute(
-        """
-        UPDATE transferencia
-        SET
-            estado = 'aceptada',
-            fecha_aceptacion = NOW()
-        WHERE id_transferencia = %s
-        """,
-        (id_transferencia,)
-    )
-
-    await execute(
-        """
-        UPDATE entrada
-        SET mail_propietario = %s
-        WHERE id_entrada = %s
-        """,
-        (
-            mail_usuario,
-            transferencia["id_entrada"]
-        )
-    )
+    try:
+        await call_procedure("SP_AceptarTransferencia", (id_transferencia,))
+    except OperationalError as e:
+        if e.args and e.args[0] == 1644:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=e.args[1],
+            )
+        raise
 
     return {
         "message": "Transferencia aceptada"
