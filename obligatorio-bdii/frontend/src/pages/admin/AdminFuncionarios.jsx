@@ -4,13 +4,15 @@ import {
   Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Alert, Dialog, DialogTitle,
   DialogContent, DialogActions, IconButton,
-  Stack, Chip, MenuItem,
+  Stack, Chip, MenuItem, Menu, Divider,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { listarFuncionarios, buscarUsuarios, getAsignaciones, asignarSector, desasignarSector } from '../../api/admin';
+import DevicesIcon from '@mui/icons-material/Devices';
+import DeviceHubIcon from '@mui/icons-material/DeviceHub';
+import { listarFuncionarios, buscarUsuarios, getAsignaciones, asignarSector, desasignarSector, listarDispositivosFuncionario, listarTodosDispositivos, crearDispositivo, asignarDispositivoExistente, eliminarDispositivo } from '../../api/admin';
 import { ascenderFuncionario } from '../../api/usuarios';
 import { listarEventos } from '../../api/eventos';
 import { getSectoresAdmin } from '../../api/eventos';
@@ -195,6 +197,219 @@ function AsignacionDialog({ open, funcionario, onClose }) {
   );
 }
 
+function DispositivoDialog({ open, funcionario, onClose }) {
+  const [dispositivos, setDispositivos] = useState([]);
+  const [mode, setMode] = useState(''); // '' | 'nuevo' | 'existente'
+  const [nuevoIdentificador, setNuevoIdentificador] = useState('');
+  const [todosDispositivos, setTodosDispositivos] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const cargarDispositivos = useCallback(async () => {
+    if (!funcionario) return;
+    setLoading(true);
+    try {
+      const data = await listarDispositivosFuncionario(funcionario.mail);
+      setDispositivos(data);
+    } catch {
+      setError('Error al cargar dispositivos');
+    } finally {
+      setLoading(false);
+    }
+  }, [funcionario]);
+
+  useEffect(() => {
+    if (open) {
+      setMode('');
+      setNuevoIdentificador('');
+      setError('');
+      cargarDispositivos();
+    }
+  }, [open, cargarDispositivos]);
+
+  const handleRegistrarNuevo = async () => {
+    if (!nuevoIdentificador.trim()) return;
+    setError('');
+    try {
+      const result = await crearDispositivo(funcionario.mail, { identificador: nuevoIdentificador.trim() });
+      setDispositivos(result);
+      setNuevoIdentificador('');
+      setMode('');
+    } catch (err) {
+      setError(err?.response?.data?.detail || 'Error al registrar dispositivo');
+    }
+  };
+
+  const handleSeleccionarExistente = async () => {
+    setError('');
+    try {
+      const data = await listarTodosDispositivos();
+      setTodosDispositivos(data);
+      setMode('existente');
+    } catch {
+      setError('Error al cargar dispositivos existentes');
+    }
+  };
+
+  const handleAsignarExistente = async (d) => {
+    setError('');
+    try {
+      const result = await asignarDispositivoExistente(funcionario.mail, {
+        identificador: d.identificador,
+        mail_origen: d.mail_funcionario,
+      });
+      setDispositivos(result);
+      setMode('');
+    } catch (err) {
+      setError(err?.response?.data?.detail || 'Error al asignar dispositivo');
+    }
+  };
+
+  const handleEliminar = async (identificador) => {
+    const confirmar = window.confirm(`¿Está seguro de eliminar el dispositivo ${identificador}?`);
+    if (!confirmar) return;
+    try {
+      const result = await eliminarDispositivo(funcionario.mail, identificador);
+      setDispositivos(result);
+    } catch (err) {
+      setError(err?.response?.data?.detail || 'Error al eliminar dispositivo');
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography fontWeight={500} fontSize={15}>
+          Dispositivos — {funcionario?.mail}
+        </Typography>
+        <IconButton size="small" onClick={onClose}><CloseIcon fontSize="small" /></IconButton>
+      </DialogTitle>
+      <DialogContent>
+        {error && <Alert severity="error" sx={{ mb: 2, fontSize: 13 }}>{error}</Alert>}
+
+        {loading ? (
+          <Typography fontSize={13} color="text.disabled" py={4} textAlign="center">Cargando...</Typography>
+        ) : (
+          <>
+            {/* Dispositivos actuales */}
+            <Typography fontSize={12} fontWeight={500} color="text.secondary" textTransform="uppercase" letterSpacing={0.5} mb={1}>
+              Dispositivos asignados ({dispositivos.length})
+            </Typography>
+
+            {dispositivos.length === 0 ? (
+              <Typography fontSize={13} color="text.disabled" mb={2}>Sin dispositivos asignados</Typography>
+            ) : (
+              <Stack gap={0.75} mb={2}>
+                {dispositivos.map(d => (
+                  <Paper key={d.identificador} elevation={0}
+                    sx={{ border: '0.5px solid', borderColor: 'divider', borderRadius: 1.5, p: 1.25, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <DevicesIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                      <Typography fontSize={13} fontWeight={500}>{d.identificador}</Typography>
+                    </Box>
+                    <IconButton size="small" color="error" onClick={() => handleEliminar(d.identificador)}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Paper>
+                ))}
+              </Stack>
+            )}
+
+            <Divider sx={{ my: 1.5 }} />
+
+            {/* Acciones */}
+            {mode === '' && (
+              <Stack gap={1}>
+                <Button
+                  variant="outlined" size="small"
+                  startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+                  onClick={() => setMode('nuevo')}
+                  sx={{ fontSize: 12, justifyContent: 'flex-start' }}
+                >
+                  Registrar nuevo dispositivo
+                </Button>
+                <Button
+                  variant="outlined" size="small"
+                  startIcon={<DeviceHubIcon sx={{ fontSize: 16 }} />}
+                  onClick={handleSeleccionarExistente}
+                  sx={{ fontSize: 12, justifyContent: 'flex-start' }}
+                >
+                  Seleccionar dispositivo existente
+                </Button>
+              </Stack>
+            )}
+
+            {mode === 'nuevo' && (
+              <Box>
+                <Typography fontSize={12} fontWeight={500} color="text.secondary" mb={1}>
+                  Nuevo dispositivo
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
+                  <TextField
+                    size="small" fullWidth
+                    label="Identificador"
+                    placeholder="Ej: DISP-006"
+                    value={nuevoIdentificador}
+                    onChange={e => setNuevoIdentificador(e.target.value)}
+                    sx={{ '& .MuiInputBase-input': { fontSize: 13 } }}
+                  />
+                  <Button
+                    variant="contained" size="small"
+                    onClick={handleRegistrarNuevo}
+                    disabled={!nuevoIdentificador.trim()}
+                    sx={{ fontSize: 12, flexShrink: 0, whiteSpace: 'nowrap' }}
+                  >
+                    Registrar
+                  </Button>
+                </Box>
+              </Box>
+            )}
+
+            {mode === 'existente' && (
+              <Box>
+                <Typography fontSize={12} fontWeight={500} color="text.secondary" mb={1}>
+                  Dispositivos en el sistema
+                </Typography>
+                {todosDispositivos.length === 0 ? (
+                  <Typography fontSize={13} color="text.disabled">No hay dispositivos en el sistema</Typography>
+                ) : (
+                  <Stack gap={0.75} sx={{ maxHeight: 300, overflow: 'auto' }}>
+                    {todosDispositivos.map(d => (
+                      <Paper key={`${d.mail_funcionario}-${d.identificador}`} elevation={0}
+                        sx={{ border: '0.5px solid', borderColor: 'divider', borderRadius: 1.5, p: 1.25, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                      >
+                        <Box>
+                          <Typography fontSize={13} fontWeight={500}>{d.identificador}</Typography>
+                          <Typography fontSize={11} color="text.disabled">Actual dueño: {d.mail_funcionario}</Typography>
+                        </Box>
+                        <Button
+                          size="small" variant="outlined"
+                          disabled={d.mail_funcionario === funcionario?.mail}
+                          onClick={() => handleAsignarExistente(d)}
+                          sx={{ fontSize: 11, flexShrink: 0 }}
+                        >
+                          {d.mail_funcionario === funcionario?.mail ? 'Ya asignado' : 'Asignar'}
+                        </Button>
+                      </Paper>
+                    ))}
+                  </Stack>
+                )}
+                <Button size="small" sx={{ fontSize: 12, mt: 1 }} onClick={() => setMode('')}>
+                  Volver
+                </Button>
+              </Box>
+            )}
+          </>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} size="small" sx={{ fontSize: 13 }}>Cerrar</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 function AdminFuncionarios() {
   const [funcionarios, setFuncionarios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -208,6 +423,9 @@ function AdminFuncionarios() {
   const [nroLegajo, setNroLegajo] = useState('');
 
   const [asignando, setAsignando] = useState(null);
+  const [dispositivoAnchor, setDispositivoAnchor] = useState(null);
+  const [dispositivoFuncionario, setDispositivoFuncionario] = useState(null);
+  const [dispositivoDialogOpen, setDispositivoDialogOpen] = useState(false);
 
   const cargarFuncionarios = useCallback(async () => {
     try {
@@ -384,9 +602,17 @@ function AdminFuncionarios() {
                         size="small" variant="outlined"
                         startIcon={<AssignmentIcon sx={{ fontSize: 14 }} />}
                         onClick={() => setAsignando(f)}
+                        sx={{ fontSize: 12, mr: 1 }}
+                      >
+                        Sectores
+                      </Button>
+                      <Button
+                        size="small" variant="outlined"
+                        startIcon={<DevicesIcon sx={{ fontSize: 14 }} />}
+                        onClick={(e) => { setDispositivoAnchor(e.currentTarget); setDispositivoFuncionario(f); }}
                         sx={{ fontSize: 12 }}
                       >
-                        Asignar sectores
+                        Dispositivo
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -409,6 +635,26 @@ function AdminFuncionarios() {
           open={!!asignando}
           funcionario={asignando}
           onClose={() => setAsignando(null)}
+        />
+      )}
+
+      <Menu
+        anchorEl={dispositivoAnchor}
+        open={!!dispositivoAnchor}
+        onClose={() => setDispositivoAnchor(null)}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+      >
+        <MenuItem dense sx={{ fontSize: 13 }} onClick={() => { setDispositivoAnchor(null); setDispositivoDialogOpen(true); }}>
+          <AddIcon sx={{ fontSize: 16, mr: 1 }} /> Asignar dispositivo
+        </MenuItem>
+      </Menu>
+
+      {dispositivoFuncionario && (
+        <DispositivoDialog
+          open={dispositivoDialogOpen}
+          funcionario={dispositivoFuncionario}
+          onClose={() => { setDispositivoDialogOpen(false); setDispositivoFuncionario(null); }}
         />
       )}
     </Box>

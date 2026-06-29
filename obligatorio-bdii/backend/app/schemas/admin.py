@@ -33,3 +33,19 @@ class AsignacionCreate(BaseModel):
     id_evento: int
     id_estadio: int
     codigo_sector: str
+
+
+class DispositivoResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    mail_funcionario: str
+    identificador: str
+
+
+class DispositivoCreate(BaseModel):
+    identificador: str
+
+
+class DispositivoAsignarExistente(BaseModel):
+    identificador: str
+    mail_origen: str

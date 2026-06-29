@@ -98,6 +98,97 @@ async def asignar_sector(mail_funcionario: str, id_evento: int, id_estadio: int,
     return await get_asignaciones(mail_funcionario)
 
 
+async def listar_dispositivos_funcionario(mail_funcionario: str):
+    return await fetch_all(
+        """
+        SELECT d.mail_funcionario, d.identificador
+        FROM dispositivo d
+        WHERE d.mail_funcionario = %s
+        ORDER BY d.identificador
+        """,
+        (mail_funcionario,),
+    )
+
+
+async def listar_todos_dispositivos():
+    return await fetch_all(
+        """
+        SELECT d.mail_funcionario, d.identificador
+        FROM dispositivo d
+        JOIN funcionario f ON f.mail_usuario = d.mail_funcionario
+        JOIN usuario u ON u.mail = f.mail_usuario
+        ORDER BY d.mail_funcionario, d.identificador
+        """
+    )
+
+
+async def crear_dispositivo(mail_funcionario: str, identificador: str):
+    ya_existe = await fetch_one(
+        "SELECT 1 FROM dispositivo WHERE mail_funcionario = %s AND identificador = %s",
+        (mail_funcionario, identificador),
+    )
+    if ya_existe is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El funcionario ya tiene un dispositivo con ese identificador",
+        )
+
+    await execute(
+        "INSERT INTO dispositivo (mail_funcionario, identificador) VALUES (%s, %s)",
+        (mail_funcionario, identificador),
+    )
+
+    return await listar_dispositivos_funcionario(mail_funcionario)
+
+
+async def asignar_dispositivo_existente(mail_destino: str, identificador: str, mail_origen: str):
+    dispositivo = await fetch_one(
+        "SELECT 1 FROM dispositivo WHERE mail_funcionario = %s AND identificador = %s",
+        (mail_origen, identificador),
+    )
+    if dispositivo is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dispositivo no encontrado en el funcionario de origen",
+        )
+
+    ya_asignado = await fetch_one(
+        "SELECT 1 FROM dispositivo WHERE mail_funcionario = %s AND identificador = %s",
+        (mail_destino, identificador),
+    )
+    if ya_asignado is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="El funcionario destino ya tiene un dispositivo con ese identificador",
+        )
+
+    await execute(
+        "DELETE FROM dispositivo WHERE mail_funcionario = %s AND identificador = %s",
+        (mail_origen, identificador),
+    )
+
+    await execute(
+        "INSERT INTO dispositivo (mail_funcionario, identificador) VALUES (%s, %s)",
+        (mail_destino, identificador),
+    )
+
+    return await listar_dispositivos_funcionario(mail_destino)
+
+
+async def eliminar_dispositivo(mail_funcionario: str, identificador: str):
+    eliminado = await execute(
+        "DELETE FROM dispositivo WHERE mail_funcionario = %s AND identificador = %s",
+        (mail_funcionario, identificador),
+    )
+    if eliminado == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dispositivo no encontrado",
+        )
+
+    return await listar_dispositivos_funcionario(mail_funcionario)
+
+
 async def desasignar_sector(mail_funcionario: str, id_evento: int, id_estadio: int, codigo_sector: str):
     eliminado = await execute(
         "DELETE FROM asignacion WHERE id_evento = %s AND id_estadio = %s AND codigo_sector = %s AND mail_funcionario = %s",
