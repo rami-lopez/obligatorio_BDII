@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.db.dependencies import get_current_user, require_admin
 
@@ -31,7 +31,19 @@ sedes_router = APIRouter(
 
 
 @sedes_router.get("/", response_model=list[SedeResponse])
-async def listar_sedes():
+async def listar_sedes(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") == "administrador":
+        id_sede = current_user.get("id_sede")
+
+        if id_sede is None:
+            return []
+
+        sedes = await obtener_sedes()
+        return [
+            sede for sede in sedes
+            if int(sede["id_sede"]) == int(id_sede)
+        ]
+
     return await obtener_sedes()
 
 
@@ -53,11 +65,20 @@ async def alta_estadio(
     estadio: EstadioCreate,
     current_user: dict = Depends(require_admin)
 ):
+    id_sede_admin = current_user.get("id_sede")
+
+    if id_sede_admin is None:
+        raise HTTPException(
+            status_code=403,
+            detail="El administrador no tiene una sede asignada"
+        )
+
     sectores_dict = [s.model_dump() for s in estadio.sectores]
+
     return await crear_estadio(
         estadio.nombre,
         estadio.ciudad,
-        estadio.id_sede,
+        id_sede_admin,
         sectores_dict
     )
 

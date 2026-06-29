@@ -28,7 +28,10 @@ const FORM_VACIO = { nombre: '', ciudad: '', id_sede: '' };
 const SECTOR_VACIO = { activo: true, capacidad: '', costo: '' };
 
 function FormEstadio({ onClose, onGuardar, sedes }) {
-  const [form, setForm] = useState(FORM_VACIO);
+  const [form, setForm] = useState({
+    ...FORM_VACIO,
+    id_sede: sedes.length === 1 ? sedes[0].id_sede : '',
+  });
   const [sectores, setSectores] = useState(
     SECTORES_BASE.map(s => ({ ...SECTOR_VACIO, codigo: s.codigo }))
   );
@@ -113,6 +116,7 @@ function FormEstadio({ onClose, onGuardar, sedes }) {
           label="País (sede)" size="small" select
           value={form.id_sede} onChange={e => set('id_sede', e.target.value)}
           error={!!errors.id_sede} helperText={errors.id_sede}
+          disabled={sedes.length === 1}
         >
           {sedes.map(s => <MenuItem key={s.id_sede} value={s.id_sede}>{s.pais}</MenuItem>)}
         </TextField>
