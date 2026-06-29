@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.db.dependencies import get_current_user, require_admin
 from app.schemas.event import EventCreate, EventResponse, EventUpdate, HabilitarSectorRequest, SectorEventoResponse, SectorAdminResponse
-from app.services.event import crear_evento, get_evento, get_eventos, update_evento, get_sectores_evento, get_sectores_evento_admin, habilitar_sector, deshabilitar_sector
+from app.services.event import crear_evento, get_evento, get_eventos, update_evento, get_sectores_evento, get_sectores_evento_admin, habilitar_sector, deshabilitar_sector, eliminar_evento
 
 router = APIRouter(prefix="/eventos", tags=["eventos"])
 
@@ -145,3 +145,22 @@ async def actualizar_evento(
             detail="Evento no encontrado",
         )
     return resultado
+
+@router.delete("/{id_evento}", status_code=status.HTTP_204_NO_CONTENT)
+async def borrar_evento(
+    id_evento: int,
+    current_user: dict = Depends(require_admin),
+):
+    resultado = await eliminar_evento(id_evento)
+
+    if resultado is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Evento no encontrado",
+        )
+
+    if resultado == "tiene_entradas":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se puede eliminar un evento que tiene entradas vendidas",
+        )

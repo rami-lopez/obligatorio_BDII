@@ -7,11 +7,12 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import TuneIcon from '@mui/icons-material/Tune';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckIcon from '@mui/icons-material/Check';
 import { useNavigate } from 'react-router-dom';
-import { listarEventos, crearEvento, actualizarEvento } from '../../api/eventos';
+import { listarEventos, crearEvento, actualizarEvento, eliminarEvento } from '../../api/eventos';
 import { listarEstadios } from '../../api/estadios';
 
 const ESTADO_CONFIG = {
@@ -223,6 +224,25 @@ function AdminEventos() {
     setFormVisible(false);
   };
 
+  const handleEliminar = async (evento) => {
+    const confirmar = window.confirm(
+      `¿Está seguro de eliminar el evento ${
+        evento.equipo_visitante
+          ? `${evento.equipo_local} vs ${evento.equipo_visitante}`
+          : evento.equipo_local
+      }? Si tiene entradas activas, no se eliminará`
+    );
+
+    if (!confirmar) return;
+
+    try {
+      await eliminarEvento(evento.id_evento);
+      await cargarDatos();
+    } catch (err) {
+      setError(err?.response?.data?.detail || 'Error al eliminar el evento');
+    }
+  };
+
   const formatFecha = (iso) => {
     if (!iso) return '';
     return new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -369,6 +389,22 @@ function AdminEventos() {
                         sx={{ color: esPasado(e.fecha_hora) ? 'action.disabled' : 'text.secondary', '&:hover': { color: 'text.primary' } }}
                       >
                         <EditIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        disabled={esPasado(e.fecha_hora)}
+                        onClick={() => handleEliminar(e)}
+                        sx={{
+                          color: esPasado(e.fecha_hora)
+                            ? 'action.disabled'
+                            : 'text.secondary',
+                          '&:hover': { color: 'error.main' },
+                          display: 'block',
+                          mt: 0.5,
+                          ml: 'auto',
+                        }}
+                      >
+                        <DeleteIcon sx={{ fontSize: 16 }} />
                       </IconButton>
                     </TableCell>
                   </TableRow>

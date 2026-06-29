@@ -23,3 +23,6 @@ export const habilitarSector = (idEvento, codigoSector) =>
 
 export const deshabilitarSector = (idEvento, codigoSector) =>
   client.delete(`/eventos/${idEvento}/sectores/${codigoSector}`).then(r => r.data);
+
+export const eliminarEvento = (id) =>
+  client.delete(`/eventos/${id}`);

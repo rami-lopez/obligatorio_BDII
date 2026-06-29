@@ -259,3 +259,35 @@ async def deshabilitar_sector(id_evento: int, codigo_sector: str) -> list | str 
 
     return await get_sectores_evento_admin(id_evento)
     
+async def eliminar_evento(id_evento: int) -> str | None:
+    evento = await get_evento(id_evento)
+    if evento is None:
+        return None
+
+    entradas = await fetch_one(
+        """
+        SELECT 1
+        FROM entrada
+        WHERE id_evento = %s
+          AND estado != 'anulada'
+        LIMIT 1
+        """,
+        (id_evento,),
+    )
+
+    if entradas is not None:
+        return "tiene_entradas"
+
+    async with transaction() as connection:
+        async with connection.cursor() as cursor:
+            await cursor.execute(
+                "DELETE FROM evento_sector WHERE id_evento = %s",
+                (id_evento,),
+            )
+
+            await cursor.execute(
+                "DELETE FROM evento WHERE id_evento = %s",
+                (id_evento,),
+            )
+
+    return "eliminado"
