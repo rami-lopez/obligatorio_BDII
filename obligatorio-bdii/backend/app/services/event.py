@@ -291,3 +291,32 @@ async def eliminar_evento(id_evento: int) -> str | None:
             )
 
     return "eliminado"
+
+
+async def evento_pertenece_a_sede(id_evento: int, id_sede: int) -> bool:
+    resultado = await fetch_one(
+        """
+        SELECT 1
+        FROM evento ev
+        JOIN estadio es ON es.id_estadio = ev.id_estadio
+        WHERE ev.id_evento = %s
+          AND es.id_sede = %s
+        """,
+        (id_evento, id_sede),
+    )
+
+    return resultado is not None
+
+
+async def estadio_pertenece_a_sede(id_estadio: int, id_sede: int) -> bool:
+    resultado = await fetch_one(
+        """
+        SELECT 1
+        FROM estadio
+        WHERE id_estadio = %s
+          AND id_sede = %s
+        """,
+        (id_estadio, id_sede),
+    )
+
+    return resultado is not None

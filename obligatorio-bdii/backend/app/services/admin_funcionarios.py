@@ -45,10 +45,9 @@ async def buscar_usuarios(q: str):
     )
 
 
-async def get_asignaciones(mail_funcionario: str):
-    return await fetch_all(
-        """
-        SELECT
+async def get_asignaciones(mail_funcionario: str, id_sede_admin: int | None = None):
+    query = """
+        SELECT 
             a.id_evento,
             a.id_estadio,
             a.codigo_sector,
@@ -60,27 +59,57 @@ async def get_asignaciones(mail_funcionario: str):
         JOIN evento ev ON ev.id_evento = a.id_evento
         JOIN estadio es ON es.id_estadio = a.id_estadio
         WHERE a.mail_funcionario = %s
-        ORDER BY ev.fecha_hora DESC, a.codigo_sector
-        """,
-        (mail_funcionario,),
-    )
+    """
+
+    params = [mail_funcionario]
+
+    if id_sede_admin is not None:
+        query += " AND es.id_sede = %s"
+        params.append(id_sede_admin)
+
+    query += " ORDER BY ev.fecha_hora DESC, a.codigo_sector"
+
+    return await fetch_all(query, tuple(params))
 
 
-async def asignar_sector(mail_funcionario: str, id_evento: int, id_estadio: int, codigo_sector: str):
+async def asignar_sector(
+    mail_funcionario: str,
+    id_evento: int,
+    id_estadio: int,
+    codigo_sector: str,
+    id_sede_admin: int,
+):
     existe = await fetch_one(
-        "SELECT 1 FROM evento_sector WHERE id_evento = %s AND id_estadio = %s AND codigo_sector = %s",
-        (id_evento, id_estadio, codigo_sector),
+        """
+        SELECT 1
+        FROM evento_sector esec
+        JOIN estadio est ON est.id_estadio = esec.id_estadio
+        WHERE esec.id_evento = %s
+          AND esec.id_estadio = %s
+          AND esec.codigo_sector = %s
+          AND est.id_sede = %s
+        """,
+        (id_evento, id_estadio, codigo_sector, id_sede_admin),
     )
+
     if existe is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="El sector no esta habilitado para ese evento",
+            detail="El sector no está habilitado para ese evento o no pertenece a tu sede",
         )
 
     ya_asignado = await fetch_one(
-        "SELECT 1 FROM asignacion WHERE id_evento = %s AND id_estadio = %s AND codigo_sector = %s AND mail_funcionario = %s",
+        """
+        SELECT 1
+        FROM asignacion
+        WHERE id_evento = %s
+          AND id_estadio = %s
+          AND codigo_sector = %s
+          AND mail_funcionario = %s
+        """,
         (id_evento, id_estadio, codigo_sector, mail_funcionario),
     )
+
     if ya_asignado is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -89,13 +118,18 @@ async def asignar_sector(mail_funcionario: str, id_evento: int, id_estadio: int,
 
     await execute(
         """
-        INSERT INTO asignacion (id_evento, id_estadio, codigo_sector, mail_funcionario)
+        INSERT INTO asignacion (
+            id_evento,
+            id_estadio,
+            codigo_sector,
+            mail_funcionario
+        )
         VALUES (%s, %s, %s, %s)
         """,
         (id_evento, id_estadio, codigo_sector, mail_funcionario),
     )
 
-    return await get_asignaciones(mail_funcionario)
+    return await get_asignaciones(mail_funcionario, id_sede_admin)
 
 
 async def listar_dispositivos_funcionario(mail_funcionario: str):
@@ -189,15 +223,46 @@ async def eliminar_dispositivo(mail_funcionario: str, identificador: str):
     return await listar_dispositivos_funcionario(mail_funcionario)
 
 
-async def desasignar_sector(mail_funcionario: str, id_evento: int, id_estadio: int, codigo_sector: str):
+async def desasignar_sector(
+    mail_funcionario: str,
+    id_evento: int,
+    id_estadio: int,
+    codigo_sector: str,
+    id_sede_admin: int,
+):
+    pertenece = await fetch_one(
+        """
+        SELECT 1
+        FROM evento ev
+        JOIN estadio es ON es.id_estadio = ev.id_estadio
+        WHERE ev.id_evento = %s
+          AND ev.id_estadio = %s
+          AND es.id_sede = %s
+        """,
+        (id_evento, id_estadio, id_sede_admin),
+    )
+
+    if pertenece is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No puedes desasignar sectores de eventos de otra sede",
+        )
+
     eliminado = await execute(
-        "DELETE FROM asignacion WHERE id_evento = %s AND id_estadio = %s AND codigo_sector = %s AND mail_funcionario = %s",
+        """
+        DELETE FROM asignacion
+        WHERE id_evento = %s
+          AND id_estadio = %s
+          AND codigo_sector = %s
+          AND mail_funcionario = %s
+        """,
         (id_evento, id_estadio, codigo_sector, mail_funcionario),
     )
+
     if eliminado == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Asignacion no encontrada",
         )
 
-    return await get_asignaciones(mail_funcionario)
+    return await get_asignaciones(mail_funcionario, id_sede_admin)

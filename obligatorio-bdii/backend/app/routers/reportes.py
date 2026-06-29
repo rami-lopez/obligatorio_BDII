@@ -10,34 +10,40 @@ router = APIRouter(prefix="/reportes", tags=["reportes"])
 async def get_evento_con_mas_entradas_vendidas(
     current_user: dict = Depends(require_admin),
 ):
-    resultado = await get_evento_mas_vendido()
+    resultado = await get_evento_mas_vendido(current_user["id_sede"])
+
     if resultado is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Evento no encontrado",
         )
+
     return resultado
 
 @router.get("/mayores-compradores", response_model=list[MayorCompradorResponse])
 async def get_comprador_de_mas_entradas(
     current_user: dict = Depends(require_admin),
 ):
-    resultado = await get_mayor_comprador()
+    resultado = await get_mayor_comprador(current_user["id_sede"])
+
     if resultado is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Comprador no encontrado",
         )
+
     return resultado
 
 @router.get("/validaciones", response_model=list[ValidacionReporteResponse])
 async def get_validaciones_reporte(
     current_user: dict = Depends(require_admin),
 ):
-    resultado = await get_todas_validaciones()
+    resultado = await get_todas_validaciones(current_user["id_sede"])
+
     if resultado is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No hay validaciones",
         )
+
     return resultado

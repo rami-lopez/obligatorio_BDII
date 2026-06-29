@@ -43,7 +43,7 @@ async def read_asignaciones(
     mail: str,
     current_user: dict = Depends(require_admin),
 ):
-    return await get_asignaciones(mail)
+    return await get_asignaciones(mail, current_user["id_sede"])
 
 
 @router.post(
@@ -56,7 +56,13 @@ async def create_asignacion(
     payload: AsignacionCreate,
     current_user: dict = Depends(require_admin),
 ):
-    return await asignar_sector(mail, payload.id_evento, payload.id_estadio, payload.codigo_sector)
+    return await asignar_sector(
+        mail,
+        payload.id_evento,
+        payload.id_estadio,
+        payload.codigo_sector,
+        current_user["id_sede"],
+    )
 
 
 @router.delete("/funcionarios/{mail}/asignaciones", response_model=list[AsignacionResponse])
@@ -67,7 +73,13 @@ async def delete_asignacion(
     codigo_sector: str = Query(...),
     current_user: dict = Depends(require_admin),
 ):
-    return await desasignar_sector(mail, id_evento, id_estadio, codigo_sector)
+    return await desasignar_sector(
+        mail,
+        id_evento,
+        id_estadio,
+        codigo_sector,
+        current_user["id_sede"],
+    )
 
 
 @router.get("/funcionarios/{mail}/dispositivos", response_model=list[DispositivoResponse])
