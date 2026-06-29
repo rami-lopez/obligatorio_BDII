@@ -69,6 +69,17 @@ async def crear_estadio(
     id_sede: int,
     sectores: list | None = None,
 ):
+    
+    # Verificar que no exista un estadio con el mismo nombre
+    existente = await fetch_one(
+        "SELECT id_estadio FROM estadio WHERE nombre = %s",
+        (nombre,)
+    )
+    if existente is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ya existe un estadio con ese nombre"
+        )
 
     async with transaction() as conn:
         async with conn.cursor() as cursor:
